@@ -2117,7 +2117,7 @@ pub const MerkleTree = struct {
         var current_level_count: usize = self.nodes.items.len;
 
         while (current_level_count > 1) {
-            var new_level_start = self.nodes.items.len;
+            const new_level_start = self.nodes.items.len;
             var level_i: usize = 0;
             while (level_i < current_level_count) : (level_i += 2) {
                 const left_idx = current_level_start + level_i;
@@ -3527,10 +3527,10 @@ test "SecurityProofEngine information flow proof" {
     var graph = try SelfSimilarRelationalGraph.init(allocator);
     defer graph.deinit();
 
-    var node1 = try Node.init(allocator, "node1", "data1", Qubit{ .a = Complex(f64).init(0.3, 0.0), .b = Complex(f64).init(0.0, 0.0) }, 0.0);
+    const node1 = try Node.init(allocator, "node1", "data1", Qubit{ .a = Complex(f64).init(0.3, 0.0), .b = Complex(f64).init(0.0, 0.0) }, 0.0);
     try graph.addNode(node1);
 
-    var node2 = try Node.init(allocator, "node2", "data2", Qubit{ .a = Complex(f64).init(0.5, 0.0), .b = Complex(f64).init(0.0, 0.0) }, 0.0);
+    const node2 = try Node.init(allocator, "node2", "data2", Qubit{ .a = Complex(f64).init(0.5, 0.0), .b = Complex(f64).init(0.0, 0.0) }, 0.0);
     try graph.addNode(node2);
 
     var engine = try SecurityProofEngine.init(allocator, .INTERNAL);

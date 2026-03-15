@@ -417,13 +417,13 @@ pub const FractalLevel = struct {
 
         const n = @as(f64, @floatFromInt(count));
         const denominator = n * log_r2_sum - log_r_sum * log_r_sum;
-        if (@fabs(denominator) < 1e-10) {
+        if (@abs(denominator) < 1e-10) {
             self.fractal_dimension = 1.0;
             return 1.0;
         }
 
         const slope = (n * log_nr_sum - log_n_sum * log_r_sum) / denominator;
-        self.fractal_dimension = @fabs(slope);
+        self.fractal_dimension = @abs(slope);
         return self.fractal_dimension;
     }
 
@@ -796,7 +796,7 @@ pub const FractalTree = struct {
     }
 
     fn computeLevelDimension(self: *Self, level: *FractalLevel) f64 {
-        var local_dim = level.computeLocalFractalDimension();
+        const local_dim = level.computeLocalFractalDimension();
 
         if (level.child_levels.items.len == 0) {
             return local_dim;
@@ -1006,13 +1006,13 @@ pub const SelfSimilarIndex = struct {
 
         const n = @as(f64, @floatFromInt(count));
         const denominator = n * log_l2_sum - log_l_sum * log_l_sum;
-        if (@fabs(denominator) < 1e-10) {
+        if (@abs(denominator) < 1e-10) {
             self.dimension_estimate = 1.0;
             return 1.0;
         }
 
         const slope = (n * log_ln_sum - log_l_sum * log_n_sum) / denominator;
-        self.dimension_estimate = @fabs(slope);
+        self.dimension_estimate = @abs(slope);
         return self.dimension_estimate;
     }
 
@@ -1851,13 +1851,13 @@ test "FractalLevel basic operations" {
     var level = FractalLevel.init(allocator, 0, 1.0);
     defer level.deinit();
 
-    var node1 = try FractalNodeData.init(allocator, "node1", "data1", 1.0, 1.0);
+    const node1 = try FractalNodeData.init(allocator, "node1", "data1", 1.0, 1.0);
     try level.addNode(node1);
 
     try std.testing.expect(level.node_count == 1);
     try std.testing.expect(level.getNode("node1") != null);
 
-    var edge = try FractalEdgeData.init(allocator, "node1", "node2", 0.5, 1.0, .hierarchical);
+    const edge = try FractalEdgeData.init(allocator, "node1", "node2", 0.5, 1.0, .hierarchical);
     try level.addEdge(edge);
 
     try std.testing.expect(level.edge_count == 1);
@@ -1894,7 +1894,7 @@ test "SelfSimilarIndex pattern operations" {
     var tree_id: [32]u8 = undefined;
     @memset(&tree_id, 0);
 
-    var location = try PatternLocation.init(allocator, tree_id, 0, "node1", 0, 5, 1.0);
+    const location = try PatternLocation.init(allocator, tree_id, 0, "node1", 0, 5, 1.0);
     try index.addPattern("test_pattern", location);
 
     try std.testing.expect(index.pattern_count == 1);

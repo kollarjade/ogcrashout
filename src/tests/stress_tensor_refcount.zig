@@ -22,8 +22,8 @@ fn threadWorker(ctx: ThreadContext) void {
     var prng = std.Random.DefaultPrng.init(seed);
     const rand = prng.random();
 
-    _ = ctx.barrier.fetchAdd(1, .SeqCst);
-    while (ctx.barrier.load(.SeqCst) < ctx.total_threads) {
+    _ = ctx.barrier.fetchAdd(1, .seq_cst);
+    while (ctx.barrier.load(.seq_cst) < ctx.total_threads) {
         std.Thread.yield() catch {};
     }
 
@@ -84,7 +84,7 @@ fn threadWorker(ctx: ThreadContext) void {
 }
 
 fn getRefcount(tensor: *const Tensor) usize {
-    return @atomicLoad(usize, tensor.refcount, .SeqCst);
+    return @atomicLoad(usize, tensor.refcount, .seq_cst);
 }
 
 fn runStressTest(allocator: Allocator, config: TestConfig) !void {
@@ -124,7 +124,7 @@ fn runStressTest(allocator: Allocator, config: TestConfig) !void {
 
     var spawned_count: usize = 0;
     errdefer {
-        barrier.store(config.num_threads, .SeqCst);
+        barrier.store(config.num_threads, .seq_cst);
         var j: usize = 0;
         while (j < spawned_count) : (j += 1) {
             threads[j].join();
@@ -292,7 +292,7 @@ test "concurrent tensor stress small scale" {
 
     var spawned_count: usize = 0;
     errdefer {
-        barrier.store(config.num_threads, .SeqCst);
+        barrier.store(config.num_threads, .seq_cst);
         var j: usize = 0;
         while (j < spawned_count) : (j += 1) {
             threads[j].join();

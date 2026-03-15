@@ -1616,7 +1616,7 @@ pub fn secondsToTimestamp(seconds: f64) Timestamp {
 test "NodeVersion basic operations" {
     const allocator = std.testing.allocator;
 
-    var state = QuantumState.init(0.707, 0.707, 0.0, 0.5);
+    const state = QuantumState.init(0.707, 0.707, 0.0, 0.5);
     var version = NodeVersion.init(allocator, 0, 1000, state);
     defer version.deinit();
 
@@ -1651,14 +1651,14 @@ test "EdgeVersion basic operations" {
 test "TemporalNode versioning" {
     const allocator = std.testing.allocator;
 
-    var initial_state = QuantumState.init(1.0, 0.0, 0.0, 0.0);
+    const initial_state = QuantumState.init(1.0, 0.0, 0.0, 0.0);
     var node = try TemporalNode.init(allocator, "test_node", initial_state, 1000);
     defer node.deinit();
 
     try std.testing.expect(node.versionCount() == 1);
     try std.testing.expect(node.current_version == 0);
 
-    var new_state = QuantumState.init(0.5, 0.5, 0.1, 0.3);
+    const new_state = QuantumState.init(0.5, 0.5, 0.1, 0.3);
     const v1 = try node.addVersion(new_state, 2000);
     try std.testing.expect(v1 == 1);
     try std.testing.expect(node.current_version == 1);
@@ -1703,8 +1703,8 @@ test "TemporalGraph operations" {
     var graph = TemporalGraph.initWithTime(allocator, 1000);
     defer graph.deinit();
 
-    var state_a = QuantumState.init(1.0, 0.0, 0.0, 0.0);
-    var state_b = QuantumState.init(0.707, 0.707, 0.0, 0.5);
+    const state_a = QuantumState.init(1.0, 0.0, 0.0, 0.0);
+    const state_b = QuantumState.init(0.707, 0.707, 0.0, 0.5);
 
     try graph.addNodeAtTime("node_a", state_a, 1000);
     try graph.addNodeAtTime("node_b", state_b, 1000);
@@ -1714,7 +1714,7 @@ test "TemporalGraph operations" {
     try graph.addEdgeAtTime("node_a", "node_b", 1.0, .entangled, 1500);
     try std.testing.expect(graph.edgeCount() == 1);
 
-    var new_state = QuantumState.init(0.5, 0.5, 0.2, 0.8);
+    const new_state = QuantumState.init(0.5, 0.5, 0.2, 0.8);
     const v1 = try graph.updateNodeAtTime("node_a", new_state, 2000);
     try std.testing.expect(v1 == 1);
 
@@ -1729,14 +1729,14 @@ test "TemporalGraph snapshots" {
     var graph = TemporalGraph.initWithTime(allocator, 1000);
     defer graph.deinit();
 
-    var state = QuantumState.init(1.0, 0.0, 0.0, 0.0);
+    const state = QuantumState.init(1.0, 0.0, 0.0, 0.0);
     try graph.addNodeAtTime("node_a", state, 1000);
 
     const snapshot_id = try graph.createSnapshotAtTime(1000);
     try std.testing.expect(snapshot_id == 0);
     try std.testing.expect(graph.snapshotCount() == 1);
 
-    var new_state = QuantumState.init(0.5, 0.5, 0.0, 0.0);
+    const new_state = QuantumState.init(0.5, 0.5, 0.0, 0.0);
     _ = try graph.updateNodeAtTime("node_a", new_state, 2000);
 
     if (graph.getNode("node_a")) |node| {
@@ -1756,7 +1756,7 @@ test "TemporalQuery execution" {
     var graph = TemporalGraph.initWithTime(allocator, 1000);
     defer graph.deinit();
 
-    var state = QuantumState.init(1.0, 0.0, 0.0, 0.0);
+    const state = QuantumState.init(1.0, 0.0, 0.0, 0.0);
     try graph.addNodeAtTime("node_a", state, 1000);
     try graph.addNodeAtTime("node_b", state, 2000);
     try graph.addEdgeAtTime("node_a", "node_b", 1.0, .coherent, 1500);

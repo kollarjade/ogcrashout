@@ -11,13 +11,13 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    const world_size_str = std.os.getenv("WORLD_SIZE") orelse "8";
-    const rank_str = std.os.getenv("RANK") orelse "0";
-    const master_addr = std.os.getenv("MASTER_ADDR") orelse "127.0.0.1";
-    const master_port = std.os.getenv("MASTER_PORT") orelse "29500";
+    const world_size_str = std.posix.getenv("WORLD_SIZE") orelse "8";
+    const rank_str = std.posix.getenv("RANK") orelse "0";
+    const master_addr = std.posix.getenv("MASTER_ADDR") orelse "127.0.0.1";
+    const master_port = std.posix.getenv("MASTER_PORT") orelse "29500";
 
-    const ibm_quantum_crn = std.os.getenv("IBM_QUANTUM_CRN");
-    const ibm_quantum_api_key = std.os.getenv("IBM_QUANTUM_API_KEY");
+    const ibm_quantum_crn = std.posix.getenv("IBM_QUANTUM_CRN");
+    const ibm_quantum_api_key = std.posix.getenv("IBM_QUANTUM_API_KEY");
 
     const quantum_enabled = ibm_quantum_crn != null and ibm_quantum_api_key != null;
 

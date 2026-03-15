@@ -30,10 +30,10 @@ fn hashTripletFields(subject: []const u8, relation: []const u8, object: []const 
     h.update(&[_]u8{0});
     const conf_bits: u64 = @bitCast(confidence);
     var conf_le: [8]u8 = undefined;
-    std.mem.writeInt(u64, &conf_le, conf_bits, .Little);
+    std.mem.writeInt(u64, &conf_le, conf_bits, .little);
     h.update(&conf_le);
     var time_le: [16]u8 = undefined;
-    std.mem.writeInt(i128, &time_le, extraction_time, .Little);
+    std.mem.writeInt(i128, &time_le, extraction_time, .little);
     h.update(&time_le);
     var out: [32]u8 = undefined;
     h.final(&out);
@@ -397,7 +397,7 @@ pub const KnowledgeGraphIndex = struct {
         key: []const u8,
         triplet: *RelationalTriplet,
     ) !void {
-        var gop = try map.getOrPut(key);
+        const gop = try map.getOrPut(key);
         if (!gop.found_existing) {
             const key_copy = try self.allocator.dupe(u8, key);
             errdefer self.allocator.free(key_copy);
@@ -1264,7 +1264,7 @@ pub const CREVPipeline = struct {
             if (stats.count > 10) {
                 const std_dev = stats.getStdDev();
                 if (std_dev > 0.0) {
-                    const z = @fabs(triplet.confidence - stats.avg_confidence) / std_dev;
+                    const z = @abs(triplet.confidence - stats.avg_confidence) / std_dev;
                     const a = @min(1.0, z / 3.0);
                     const w = 0.3;
                     weighted_sum += a * w;
@@ -1372,7 +1372,7 @@ pub const CREVPipeline = struct {
     }
 
     fn updateStatistics(self: *CREVPipeline, triplet: *RelationalTriplet) !void {
-        var rel_gop = try self.relation_statistics.getOrPut(triplet.relation);
+        const rel_gop = try self.relation_statistics.getOrPut(triplet.relation);
         if (!rel_gop.found_existing) {
             const key_copy = try self.allocator.dupe(u8, triplet.relation);
             errdefer self.allocator.free(key_copy);
@@ -1381,7 +1381,7 @@ pub const CREVPipeline = struct {
         }
         rel_gop.value_ptr.*.update(triplet.confidence);
 
-        var subj_gop = try self.entity_statistics.getOrPut(triplet.subject);
+        const subj_gop = try self.entity_statistics.getOrPut(triplet.subject);
         if (!subj_gop.found_existing) {
             const key_copy = try self.allocator.dupe(u8, triplet.subject);
             errdefer self.allocator.free(key_copy);
@@ -1392,7 +1392,7 @@ pub const CREVPipeline = struct {
         subj_gop.value_ptr.*.as_subject += 1;
         subj_gop.value_ptr.*.total_confidence += triplet.confidence;
 
-        var obj_gop = try self.entity_statistics.getOrPut(triplet.object);
+        const obj_gop = try self.entity_statistics.getOrPut(triplet.object);
         if (!obj_gop.found_existing) {
             const key_copy = try self.allocator.dupe(u8, triplet.object);
             errdefer self.allocator.free(key_copy);

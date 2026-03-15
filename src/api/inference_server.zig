@@ -230,14 +230,14 @@ pub const InferenceServer = struct {
     request_count: u64,
     inference_mutex: Thread.Mutex,
     start_time: i64,
-    running: std.atomic.Atomic(bool),
+    running: std.atomic.Value(bool),
     rate_limiter: RateLimiter,
     api_key: ?[]const u8,
 
     pub fn init(allocator: Allocator, config: ServerConfig) !InferenceServer {
         var api_key: ?[]const u8 = null;
         if (config.require_api_key) {
-            if (std.os.getenv("JAIDE_API_KEY")) |env_key| {
+            if (std.posix.getenv("JAIDE_API_KEY")) |env_key| {
                 api_key = try allocator.dupe(u8, env_key);
                 std.debug.print("API key loaded from environment\n", .{});
             }
@@ -249,7 +249,7 @@ pub const InferenceServer = struct {
             .request_count = 0,
             .inference_mutex = Thread.Mutex{},
             .start_time = std.time.timestamp(),
-            .running = std.atomic.Atomic(bool).init(false),
+            .running = std.atomic.Value(bool).init(false),
             .rate_limiter = RateLimiter.init(allocator, config.rate_limit_per_minute),
             .api_key = api_key,
         };
@@ -279,16 +279,15 @@ pub const InferenceServer = struct {
 
     pub fn start(self: *InferenceServer) !void {
         const address = try net.Address.parseIp(self.config.host, self.config.port);
-        var server = net.StreamServer.init(.{
+        var server = address.listen(.{
             .reuse_address = true,
-        });
-        defer server.deinit();
-        server.listen(address) catch |err| {
+        }) catch |err| {
             std.debug.print("Failed to listen: {}\n", .{err});
             return err;
         };
+        defer server.deinit();
 
-        self.running.store(true, .SeqCst);
+        self.running.store(true, .seq_cst);
 
         std.debug.print("Security configuration:\n", .{});
         std.debug.print("   - API key auth: {s}\n", .{if (self.api_key != null) "ENABLED" else "DISABLED"});
@@ -297,7 +296,7 @@ pub const InferenceServer = struct {
         std.debug.print("\n", .{});
         std.debug.print("Inference server listening on {s}:{d}\n", .{self.config.host, self.config.port});
 
-        while (self.running.load(.SeqCst)) {
+        while (self.running.load(.seq_cst)) {
             const connection = server.accept() catch |err| {
                 std.debug.print("Failed to accept connection: {}\n", .{err});
                 continue;
@@ -310,7 +309,7 @@ pub const InferenceServer = struct {
     }
 
     pub fn stop(self: *InferenceServer) void {
-        self.running.store(false, .SeqCst);
+        self.running.store(false, .seq_cst);
     }
 
     fn handleStreamConnection(self: *InferenceServer, stream: net.Stream, client_addr: net.Address) !void {
@@ -652,11 +651,11 @@ pub fn main() !void {
 
     var config = ServerConfig{};
 
-    if (std.os.getenv("JAIDE_PORT")) |port_str| {
+    if (std.posix.getenv("JAIDE_PORT")) |port_str| {
         config.port = std.fmt.parseInt(u16, port_str, 10) catch 8080;
     }
 
-    if (std.os.getenv("JAIDE_HOST")) |host| {
+    if (std.posix.getenv("JAIDE_HOST")) |host| {
         config.host = host;
     }
 

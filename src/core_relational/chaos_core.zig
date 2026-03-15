@@ -981,7 +981,7 @@ pub const DataFlowAnalyzer = struct {
         defer core_frequencies.deinit();
 
         for (accesses) |access| {
-            var entry = try core_frequencies.getOrPut(access.core_id);
+            const entry = try core_frequencies.getOrPut(access.core_id);
             if (!entry.found_existing) {
                 entry.value_ptr.* = 0;
             }
@@ -1024,7 +1024,7 @@ pub const DataFlowAnalyzer = struct {
                         sorted_key = .{ .source = dep2, .target = dep1 };
                     }
 
-                    var weight_entry = try self.flow_weights.getOrPut(sorted_key);
+                    const weight_entry = try self.flow_weights.getOrPut(sorted_key);
                     if (!weight_entry.found_existing) {
                         weight_entry.value_ptr.* = 0.0;
                     }

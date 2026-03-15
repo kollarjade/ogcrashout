@@ -4,49 +4,62 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const futhark_c = b.path("src/hw/accel/futhark_kernels.c");
+    const futhark_include = b.path("src/hw/accel");
+
     const main_exe = b.addExecutable(.{
         .name = "jaide",
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
     main_exe.linkLibC();
+    main_exe.addCSourceFile(.{ .file = futhark_c, .flags = &.{"-O2"} });
+    main_exe.addIncludePath(futhark_include);
     b.installArtifact(main_exe);
 
     const distributed_exe = b.addExecutable(.{
         .name = "jaide-distributed",
-        .root_source_file = .{ .path = "src/main_distributed.zig" },
+        .root_source_file = b.path("src/main_distributed.zig"),
         .target = target,
         .optimize = optimize,
     });
     distributed_exe.linkLibC();
+    distributed_exe.addCSourceFile(.{ .file = futhark_c, .flags = &.{"-O2"} });
+    distributed_exe.addIncludePath(futhark_include);
     b.installArtifact(distributed_exe);
 
     const distributed_futhark_exe = b.addExecutable(.{
         .name = "jaide-distributed-futhark",
-        .root_source_file = .{ .path = "src/main_distributed_futhark.zig" },
+        .root_source_file = b.path("src/main_distributed_futhark.zig"),
         .target = target,
         .optimize = optimize,
     });
     distributed_futhark_exe.linkLibC();
+    distributed_futhark_exe.addCSourceFile(.{ .file = futhark_c, .flags = &.{"-O2"} });
+    distributed_futhark_exe.addIncludePath(futhark_include);
     b.installArtifact(distributed_futhark_exe);
 
     const gpu_exe = b.addExecutable(.{
         .name = "jaide-gpu",
-        .root_source_file = .{ .path = "src/main_gpu.zig" },
+        .root_source_file = b.path("src/main_gpu.zig"),
         .target = target,
         .optimize = optimize,
     });
     gpu_exe.linkLibC();
+    gpu_exe.addCSourceFile(.{ .file = futhark_c, .flags = &.{"-O2"} });
+    gpu_exe.addIncludePath(futhark_include);
     b.installArtifact(gpu_exe);
 
     const inference_server_exe = b.addExecutable(.{
         .name = "jaide-inference-server",
-        .root_source_file = .{ .path = "src/inference_server_main.zig" },
+        .root_source_file = b.path("src/inference_server_main.zig"),
         .target = target,
         .optimize = optimize,
     });
     inference_server_exe.linkLibC();
+    inference_server_exe.addCSourceFile(.{ .file = futhark_c, .flags = &.{"-O2"} });
+    inference_server_exe.addIncludePath(futhark_include);
     b.installArtifact(inference_server_exe);
 
     const run_cmd = b.addRunArtifact(main_exe);
@@ -64,17 +77,19 @@ pub fn build(b: *std.Build) void {
     run_distributed_step.dependOn(&run_distributed_cmd.step);
 
     const main_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
     main_tests.linkLibC();
+    main_tests.addCSourceFile(.{ .file = futhark_c, .flags = &.{"-O2"} });
+    main_tests.addIncludePath(futhark_include);
     const run_main_tests = b.addRunArtifact(main_tests);
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_main_tests.step);
 
     const tensor_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/core/tensor.zig" },
+        .root_source_file = b.path("src/core/tensor.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -83,7 +98,7 @@ pub fn build(b: *std.Build) void {
     tensor_test_step.dependOn(&run_tensor_tests.step);
 
     const memory_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/core/memory.zig" },
+        .root_source_file = b.path("src/core/memory.zig"),
         .target = target,
         .optimize = optimize,
     });

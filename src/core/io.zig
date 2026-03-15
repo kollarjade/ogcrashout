@@ -50,7 +50,7 @@ fn generateRuntimeSeed() u64 {
     var digest: [32]u8 = undefined;
     hasher.final(&digest);
     secureZeroBytes(&entropy_buf);
-    return mem.readInt(u64, digest[0..8], .Little);
+    return mem.readInt(u64, digest[0..8], .little);
 }
 
 fn secureZeroBytes(buf: []u8) void {
@@ -764,7 +764,7 @@ pub inline fn fromLittleEndian(comptime T: type, bytes: *const [@sizeOf(T)]u8) T
         const info = @typeInfo(T);
         if (info != .Int) @compileError("fromLittleEndian requires integer type");
     }
-    return mem.readInt(T, bytes, .Little);
+    return mem.readInt(T, bytes, .little);
 }
 
 pub inline fn toBigEndian(comptime T: type, value: T) T {
@@ -783,7 +783,7 @@ pub inline fn fromBigEndian(comptime T: type, bytes: *const [@sizeOf(T)]u8) T {
         const info = @typeInfo(T);
         if (info != .Int) @compileError("fromBigEndian requires integer type");
     }
-    return mem.readInt(T, bytes, .Big);
+    return mem.readInt(T, bytes, .big);
 }
 
 pub fn sequentialWrite(allocator: Allocator, path: []const u8, data: []const []const u8) !void {

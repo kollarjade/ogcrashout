@@ -74,7 +74,7 @@ pub const ReasoningPhase = struct {
     }
 
     pub fn hasConverged(self: *const Self) bool {
-        return @fabs(self.current_energy - self.target_energy) < self.convergence_threshold;
+        return @abs(self.current_energy - self.target_energy) < self.convergence_threshold;
     }
 
     pub fn finalize(self: *Self) void {
@@ -416,9 +416,9 @@ test "reasoning_orchestrator_local_phase" {
     var graph = try SelfSimilarRelationalGraph.init(allocator);
     defer graph.deinit();
 
-    var n1 = try Node.init(allocator, "n1", "data1", Qubit.initBasis0(), 0.1);
+    const n1 = try Node.init(allocator, "n1", "data1", Qubit.initBasis0(), 0.1);
     try graph.addNode(n1);
-    var n2 = try Node.init(allocator, "n2", "data2", Qubit.initBasis1(), 0.2);
+    const n2 = try Node.init(allocator, "n2", "data2", Qubit.initBasis1(), 0.2);
     try graph.addNode(n2);
 
     var esso_opt = EntangledStochasticSymmetryOptimizer.initWithSeed(allocator, 10.0, 0.9, 100, 12345);
@@ -440,7 +440,7 @@ test "reasoning_orchestrator_global_phase" {
     var graph = try SelfSimilarRelationalGraph.init(allocator);
     defer graph.deinit();
 
-    var n1 = try Node.init(allocator, "n1", "data1", Qubit.initBasis0(), 0.1);
+    const n1 = try Node.init(allocator, "n1", "data1", Qubit.initBasis0(), 0.1);
     try graph.addNode(n1);
 
     var esso_opt = EntangledStochasticSymmetryOptimizer.initWithSeed(allocator, 10.0, 0.9, 50, 42);

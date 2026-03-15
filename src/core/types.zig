@@ -225,11 +225,11 @@ pub const Tensor = struct {
     }
 
     pub fn retain(self: *Tensor) void {
-        _ = @atomicRmw(usize, self.refcount, .Add, 1, .SeqCst);
+        _ = @atomicRmw(usize, self.refcount, .Add, 1, .seq_cst);
     }
 
     pub fn release(self: *Tensor) void {
-        const old = @atomicRmw(usize, self.refcount, .Sub, 1, .SeqCst);
+        const old = @atomicRmw(usize, self.refcount, .Sub, 1, .seq_cst);
         if (old == 1) {
             self.deinit();
         }
@@ -518,7 +518,7 @@ pub const PRNG = struct {
         hasher.update(&buf);
         var hash: [32]u8 = undefined;
         hasher.final(&hash);
-        const seed = mem.readInt(u64, hash[0..8], .Little);
+        const seed = mem.readInt(u64, hash[0..8], .little);
         self.srand(seed);
     }
 

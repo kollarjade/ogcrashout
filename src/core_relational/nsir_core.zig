@@ -666,7 +666,7 @@ pub const SelfSimilarRelationalGraph = struct {
 
     fn shaUpdateU64(h: *Sha256, v: u64) void {
         var b: [8]u8 = undefined;
-        std.mem.writeInt(u64, &b, v, .Little);
+        std.mem.writeInt(u64, &b, v, .little);
         h.update(&b);
     }
 
@@ -964,8 +964,8 @@ test "graph basic operations" {
     var g = try SelfSimilarRelationalGraph.init(testing.allocator);
     defer g.deinit();
 
-    var n1 = try Node.init(testing.allocator, "a", "data_a", Qubit.initBasis0(), 0.0);
-    var n2 = try Node.init(testing.allocator, "b", "data_b", Qubit.initBasis1(), 0.0);
+    const n1 = try Node.init(testing.allocator, "a", "data_a", Qubit.initBasis0(), 0.0);
+    const n2 = try Node.init(testing.allocator, "b", "data_b", Qubit.initBasis1(), 0.0);
     try g.addNode(n1);
     try g.addNode(n2);
 

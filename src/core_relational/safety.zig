@@ -125,7 +125,7 @@ pub const SecureRng = struct {
         var seed: [8]u8 = undefined;
         std.crypto.random.bytes(&seed);
         return Self{
-            .fallback_state = std.mem.readInt(u64, &seed, .Little),
+            .fallback_state = std.mem.readInt(u64, &seed, .little),
         };
     }
 
@@ -232,7 +232,7 @@ pub fn hashWithSeed(data: []const u8, seed: u64) u64 {
 pub fn cryptoHashSeed() u64 {
     var seed_bytes: [8]u8 = undefined;
     std.crypto.random.bytes(&seed_bytes);
-    return std.mem.readInt(u64, &seed_bytes, .Little);
+    return std.mem.readInt(u64, &seed_bytes, .little);
 }
 
 pub fn safeSlice(comptime T: type, slice: []T, start: usize, end: usize) SafetyError![]T {

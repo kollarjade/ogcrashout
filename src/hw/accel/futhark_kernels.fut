@@ -671,7 +671,7 @@ let rgpu_measure_probability (state: complex): f32 =
   in f32.max 0f32 (f32.min 1f32 prob)
 
 let rgpu_measure_probability_batch [n] (states: [n]complex): [n]f32 =
-  if n == 0 then replicate 0 0f32
+  if n == 0 then replicate n 0f32
   else
     let raw = map (\s -> complex_abs_sq s) states
     let total = reduce (+) 0f32 raw

@@ -199,13 +199,13 @@ pub const ModelFormat = struct {
 
 fn hashIntLittleEndian(comptime T: type, hasher: *std.crypto.hash.sha2.Sha256, value: T) void {
     var bytes: [@sizeOf(T)]u8 = undefined;
-    mem.writeInt(T, &bytes, value, .Little);
+    mem.writeInt(T, &bytes, value, .little);
     hasher.update(bytes[0..]);
 }
 
 fn writeHashIntLittleEndian(comptime T: type, writer: anytype, hasher: *std.crypto.hash.sha2.Sha256, value: T) !void {
     var bytes: [@sizeOf(T)]u8 = undefined;
-    mem.writeInt(T, &bytes, value, .Little);
+    mem.writeInt(T, &bytes, value, .little);
     hasher.update(bytes[0..]);
     try writer.writeAll(&bytes);
 }
@@ -259,8 +259,8 @@ pub fn exportModel(model: *ModelFormat, path: []const u8) !void {
         const num_layers_u64: u64 = @intCast(rc.num_layers);
         const dim_u64: u64 = @intCast(rc.dim);
 
-        try rsf_writer.writeInt(u64, num_layers_u64, .Little);
-        try rsf_writer.writeInt(u64, dim_u64, .Little);
+        try rsf_writer.writeInt(u64, num_layers_u64, .little);
+        try rsf_writer.writeInt(u64, dim_u64, .little);
 
         for (rc.layers) |layer| {
             try layer.s_weight.save(rsf_writer);
@@ -293,22 +293,22 @@ pub fn exportModel(model: *ModelFormat, path: []const u8) !void {
         try ranker_writer.writeByte(1);
 
         const num_weights_u64: u64 = @intCast(ranker.ngram_weights.len);
-        try ranker_writer.writeInt(u64, num_weights_u64, .Little);
+        try ranker_writer.writeInt(u64, num_weights_u64, .little);
 
         for (ranker.ngram_weights) |w| {
             const w_bits: u32 = @bitCast(w);
-            try ranker_writer.writeInt(u32, w_bits, .Little);
+            try ranker_writer.writeInt(u32, w_bits, .little);
         }
 
         const num_hash_funcs_u64: u64 = @intCast(ranker.num_hash_functions);
-        try ranker_writer.writeInt(u64, num_hash_funcs_u64, .Little);
+        try ranker_writer.writeInt(u64, num_hash_funcs_u64, .little);
 
         if (ranker.lsh_hash_params.len != ranker.num_hash_functions * 2) return ModelError.CorruptedData;
         for (ranker.lsh_hash_params) |t| {
-            try ranker_writer.writeInt(u64, t, .Little);
+            try ranker_writer.writeInt(u64, t, .little);
         }
 
-        try ranker_writer.writeInt(u64, ranker.seed, .Little);
+        try ranker_writer.writeInt(u64, ranker.seed, .little);
 
         const ranker_data = try ranker_buf.toOwnedSlice();
         defer model.allocator.free(ranker_data);
@@ -332,7 +332,7 @@ pub fn exportModel(model: *ModelFormat, path: []const u8) !void {
         var mgt_writer = mgt_buf.writer();
 
         const vocab_size_u32: u32 = @intCast(mgt.vocabSize());
-        try mgt_writer.writeInt(u32, vocab_size_u32, .Little);
+        try mgt_writer.writeInt(u32, vocab_size_u32, .little);
 
         var keys = try model.allocator.alloc([]const u8, mgt.token_to_id.count());
         defer model.allocator.free(keys);
@@ -353,7 +353,7 @@ pub fn exportModel(model: *ModelFormat, path: []const u8) !void {
 
         for (keys) |word| {
             const word_len: u32 = @intCast(word.len);
-            try mgt_writer.writeInt(u32, word_len, .Little);
+            try mgt_writer.writeInt(u32, word_len, .little);
             try mgt_writer.writeAll(word);
         }
 
@@ -393,14 +393,14 @@ pub fn importModel(path: []const u8, allocator: Allocator) !ModelFormat {
     }
     hasher.update(magic[0..]);
 
-    const version = try reader.readInt(u32, .Little);
+    const version = try reader.readInt(u32, .little);
     hashIntLittleEndian(u32, &hasher, version);
 
     if (version != CURRENT_VERSION) {
         return ModelError.UnsupportedVersion;
     }
 
-    const metadata_len = try reader.readInt(u32, .Little);
+    const metadata_len = try reader.readInt(u32, .little);
     hashIntLittleEndian(u32, &hasher, metadata_len);
 
     if (metadata_len > MAX_METADATA_SIZE) return ModelError.CorruptedData;
@@ -410,7 +410,7 @@ pub fn importModel(path: []const u8, allocator: Allocator) !ModelFormat {
     try reader.readNoEof(metadata_json);
     hasher.update(metadata_json);
 
-    var metadata = try ModelMetadata.fromJson(allocator, metadata_json);
+    const metadata = try ModelMetadata.fromJson(allocator, metadata_json);
 
     var model = ModelFormat{
         .metadata = metadata,
@@ -422,7 +422,7 @@ pub fn importModel(path: []const u8, allocator: Allocator) !ModelFormat {
     hasher.update(&.{has_rsf});
 
     if (has_rsf == 1) {
-        const rsf_len = try reader.readInt(u32, .Little);
+        const rsf_len = try reader.readInt(u32, .little);
         hashIntLittleEndian(u32, &hasher, rsf_len);
 
         if (rsf_len > MAX_COMPONENT_SIZE) return ModelError.CorruptedData;
@@ -435,8 +435,8 @@ pub fn importModel(path: []const u8, allocator: Allocator) !ModelFormat {
         var rsf_stream = std.io.fixedBufferStream(rsf_data);
         var rsf_reader = rsf_stream.reader();
 
-        const num_layers_u64 = try rsf_reader.readInt(u64, .Little);
-        const dim_u64 = try rsf_reader.readInt(u64, .Little);
+        const num_layers_u64 = try rsf_reader.readInt(u64, .little);
+        const dim_u64 = try rsf_reader.readInt(u64, .little);
 
         if (num_layers_u64 > 1000000 or dim_u64 > 10000000 or num_layers_u64 > std.math.maxInt(usize) or dim_u64 > std.math.maxInt(usize)) return ModelError.CorruptedData;
 
@@ -475,7 +475,7 @@ pub fn importModel(path: []const u8, allocator: Allocator) !ModelFormat {
     hasher.update(&.{has_ranker});
 
     if (has_ranker == 1) {
-        const ranker_len = try reader.readInt(u32, .Little);
+        const ranker_len = try reader.readInt(u32, .little);
         hashIntLittleEndian(u32, &hasher, ranker_len);
 
         if (ranker_len > MAX_COMPONENT_SIZE) return ModelError.CorruptedData;
@@ -491,10 +491,10 @@ pub fn importModel(path: []const u8, allocator: Allocator) !ModelFormat {
         const ranker_version = try ranker_reader.readByte();
         if (ranker_version != 1) return ModelError.UnsupportedVersion;
 
-        const num_weights_u64 = try ranker_reader.readInt(u64, .Little);
+        const num_weights_u64 = try ranker_reader.readInt(u64, .little);
         if (num_weights_u64 > 1000000000 or num_weights_u64 > std.math.maxInt(usize)) return ModelError.CorruptedData;
 
-        var ranker = try allocator.create(Ranker);
+        const ranker = try allocator.create(Ranker);
         errdefer allocator.destroy(ranker);
 
         const num_weights = @as(usize, @intCast(num_weights_u64));
@@ -504,11 +504,11 @@ pub fn importModel(path: []const u8, allocator: Allocator) !ModelFormat {
         @memset(ngram_weights_alloc, 0);
 
         for (ngram_weights_alloc) |*w| {
-            const w_int = try ranker_reader.readInt(u32, .Little);
+            const w_int = try ranker_reader.readInt(u32, .little);
             w.* = @bitCast(w_int);
         }
 
-        const num_hash_funcs_u64 = try ranker_reader.readInt(u64, .Little);
+        const num_hash_funcs_u64 = try ranker_reader.readInt(u64, .little);
         if (num_hash_funcs_u64 > 1000 or num_hash_funcs_u64 > std.math.maxInt(usize)) return ModelError.CorruptedData;
         const num_hash_funcs = @as(usize, @intCast(num_hash_funcs_u64));
 
@@ -516,10 +516,10 @@ pub fn importModel(path: []const u8, allocator: Allocator) !ModelFormat {
         errdefer allocator.free(lsh_hash_params);
 
         for (lsh_hash_params) |*t| {
-            t.* = try ranker_reader.readInt(u64, .Little);
+            t.* = try ranker_reader.readInt(u64, .little);
         }
 
-        const seed = try ranker_reader.readInt(u64, .Little);
+        const seed = try ranker_reader.readInt(u64, .little);
 
         ranker.* = Ranker{
             .ngram_weights = ngram_weights_alloc,
@@ -547,7 +547,7 @@ pub fn importModel(path: []const u8, allocator: Allocator) !ModelFormat {
     hasher.update(&.{has_mgt});
 
     if (has_mgt == 1) {
-        const mgt_len = try reader.readInt(u32, .Little);
+        const mgt_len = try reader.readInt(u32, .little);
         hashIntLittleEndian(u32, &hasher, mgt_len);
 
         if (mgt_len > MAX_COMPONENT_SIZE) return ModelError.CorruptedData;
@@ -560,7 +560,7 @@ pub fn importModel(path: []const u8, allocator: Allocator) !ModelFormat {
         var mgt_stream = std.io.fixedBufferStream(mgt_data);
         var mgt_reader = mgt_stream.reader();
 
-        const vocab_size = try mgt_reader.readInt(u32, .Little);
+        const vocab_size = try mgt_reader.readInt(u32, .little);
         if (vocab_size > 10000000) return ModelError.CorruptedData;
 
         var words_list = std.ArrayList([]u8).init(allocator);
@@ -571,9 +571,9 @@ pub fn importModel(path: []const u8, allocator: Allocator) !ModelFormat {
 
         var i: u32 = 0;
         while (i < vocab_size) : (i += 1) {
-            const word_len = try mgt_reader.readInt(u32, .Little);
+            const word_len = try mgt_reader.readInt(u32, .little);
             if (word_len > 1024 * 1024) return ModelError.CorruptedData;
-            var word = try allocator.alloc(u8, word_len);
+            const word = try allocator.alloc(u8, word_len);
             try mgt_reader.readNoEof(word);
             try words_list.append(word);
         }
@@ -651,13 +651,13 @@ pub fn saveNSIRGraph(graph: *nsir.SelfSimilarRelationalGraph, path: []const u8) 
     var writer = buffered.writer();
 
     const node_count: u32 = @intCast(graph.nodes.count());
-    try writer.writeInt(u32, node_count, .Little);
+    try writer.writeInt(u32, node_count, .little);
 
     var node_it = graph.nodes.iterator();
     while (node_it.next()) |entry| {
         const node = entry.value_ptr.*;
         const id_len: u32 = @intCast(node.id.len);
-        try writer.writeInt(u32, id_len, .Little);
+        try writer.writeInt(u32, id_len, .little);
         try writer.writeAll(node.id);
         try writer.writeAll(mem.asBytes(&node.qubit.a.re));
         try writer.writeAll(mem.asBytes(&node.qubit.a.im));
@@ -666,7 +666,7 @@ pub fn saveNSIRGraph(graph: *nsir.SelfSimilarRelationalGraph, path: []const u8) 
     }
 
     const edge_key_count: u32 = @intCast(graph.edges.count());
-    try writer.writeInt(u32, edge_key_count, .Little);
+    try writer.writeInt(u32, edge_key_count, .little);
 
     var edge_it = graph.edges.iterator();
     while (edge_it.next()) |entry| {
@@ -674,15 +674,15 @@ pub fn saveNSIRGraph(graph: *nsir.SelfSimilarRelationalGraph, path: []const u8) 
         const edge_list = entry.value_ptr.*;
 
         const src_len: u32 = @intCast(key.source.len);
-        try writer.writeInt(u32, src_len, .Little);
+        try writer.writeInt(u32, src_len, .little);
         try writer.writeAll(key.source);
 
         const tgt_len: u32 = @intCast(key.target.len);
-        try writer.writeInt(u32, tgt_len, .Little);
+        try writer.writeInt(u32, tgt_len, .little);
         try writer.writeAll(key.target);
 
         const count: u32 = @intCast(edge_list.items.len);
-        try writer.writeInt(u32, count, .Little);
+        try writer.writeInt(u32, count, .little);
 
         for (edge_list.items) |edge| {
             try writer.writeAll(mem.asBytes(&edge.weight));
@@ -700,11 +700,11 @@ pub fn loadNSIRGraph(graph: *nsir.SelfSimilarRelationalGraph, path: []const u8, 
     var buffered = std.io.bufferedReader(file.reader());
     var reader = buffered.reader();
 
-    const node_count = try reader.readInt(u32, .Little);
+    const node_count = try reader.readInt(u32, .little);
 
     var i: u32 = 0;
     while (i < node_count) : (i += 1) {
-        const id_len = try reader.readInt(u32, .Little);
+        const id_len = try reader.readInt(u32, .little);
         const id = try allocator.alloc(u8, id_len);
         defer allocator.free(id);
         try reader.readNoEof(id);
@@ -727,21 +727,21 @@ pub fn loadNSIRGraph(graph: *nsir.SelfSimilarRelationalGraph, path: []const u8, 
         try graph.addNode(node);
     }
 
-    const edge_key_count = try reader.readInt(u32, .Little);
+    const edge_key_count = try reader.readInt(u32, .little);
 
     var j: u32 = 0;
     while (j < edge_key_count) : (j += 1) {
-        const src_len = try reader.readInt(u32, .Little);
+        const src_len = try reader.readInt(u32, .little);
         const source = try allocator.alloc(u8, src_len);
         defer allocator.free(source);
         try reader.readNoEof(source);
 
-        const tgt_len = try reader.readInt(u32, .Little);
+        const tgt_len = try reader.readInt(u32, .little);
         const target = try allocator.alloc(u8, tgt_len);
         defer allocator.free(target);
         try reader.readNoEof(target);
 
-        const count = try reader.readInt(u32, .Little);
+        const count = try reader.readInt(u32, .little);
 
         var k: u32 = 0;
         while (k < count) : (k += 1) {
@@ -766,7 +766,7 @@ pub fn loadNSIRGraph(graph: *nsir.SelfSimilarRelationalGraph, path: []const u8, 
 
 test "ModelFormat creation and metadata" {
     const testing = std.testing;
-    var gpa = testing.allocator;
+    const gpa = testing.allocator;
 
     var model = try ModelFormat.init(gpa, "TestModel", "A test model");
     defer model.deinit();

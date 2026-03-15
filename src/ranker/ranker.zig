@@ -817,28 +817,28 @@ pub const Ranker = struct {
         var file = try std.fs.cwd().createFile(path, .{});
         defer file.close();
         var writer = file.writer();
-        try writer.writeInt(u8, 2, .Little);
-        try writer.writeInt(usize, self.ngram_weights.len, .Little);
+        try writer.writeInt(u8, 2, .little);
+        try writer.writeInt(usize, self.ngram_weights.len, .little);
         var i: usize = 0;
         while (i < self.ngram_weights.len) : (i += 1) {
             try writer.writeAll(mem.asBytes(&self.ngram_weights[i]));
         }
-        try writer.writeInt(usize, self.num_hash_functions, .Little);
+        try writer.writeInt(usize, self.num_hash_functions, .little);
         i = 0;
         while (i < self.lsh_hash_params.len) : (i += 1) {
-            try writer.writeInt(u64, self.lsh_hash_params[i], .Little);
+            try writer.writeInt(u64, self.lsh_hash_params[i], .little);
         }
-        try writer.writeInt(u64, self.seed, .Little);
+        try writer.writeInt(u64, self.seed, .little);
     }
 
     pub fn importModel(self: *Ranker, path: []const u8) !void {
         const file = try std.fs.cwd().openFile(path, .{});
         defer file.close();
         var reader = file.reader();
-        const version = try reader.readInt(u8, .Little);
+        const version = try reader.readInt(u8, .little);
         if (version != 2) return error.InvalidVersion;
 
-        const num_w = try reader.readInt(usize, .Little);
+        const num_w = try reader.readInt(usize, .little);
         if (self.ngram_weights.len != num_w) {
             self.allocator.free(self.ngram_weights);
             self.ngram_weights = try self.allocator.alloc(f32, num_w);
@@ -852,7 +852,7 @@ pub const Ranker = struct {
             self.ngram_weights[i] = @as(*const f32, @ptrCast(&bytes)).*;
         }
 
-        const num_h = try reader.readInt(usize, .Little);
+        const num_h = try reader.readInt(usize, .little);
         self.num_hash_functions = num_h;
         if (self.lsh_hash_params.len != num_h * 2) {
             self.allocator.free(self.lsh_hash_params);
@@ -861,9 +861,9 @@ pub const Ranker = struct {
 
         i = 0;
         while (i < self.lsh_hash_params.len) : (i += 1) {
-            self.lsh_hash_params[i] = try reader.readInt(u64, .Little);
+            self.lsh_hash_params[i] = try reader.readInt(u64, .little);
         }
-        self.seed = try reader.readInt(u64, .Little);
+        self.seed = try reader.readInt(u64, .little);
     }
 };
 

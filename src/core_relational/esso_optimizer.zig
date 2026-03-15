@@ -27,14 +27,14 @@ pub fn cloneGraph(allocator: Allocator, source: *const SelfSimilarRelationalGrap
 
     var node_iter = source.nodes.iterator();
     while (node_iter.next()) |entry| {
-        var cloned_node = try entry.value_ptr.clone(allocator);
+        const cloned_node = try entry.value_ptr.clone(allocator);
         try new_graph.addNode(cloned_node);
     }
 
     var edge_iter = source.edges.iterator();
     while (edge_iter.next()) |entry| {
         for (entry.value_ptr.items) |*edge| {
-            var cloned_edge = try edge.clone(allocator);
+            const cloned_edge = try edge.clone(allocator);
             try new_graph.addEdge(cloned_edge.source, cloned_edge.target, cloned_edge);
         }
     }
@@ -743,7 +743,7 @@ pub const EntangledStochasticSymmetryOptimizer = struct {
             const delta_energy = candidate_state.energy - self.current_state.?.energy;
 
             if (self.acceptMove(delta_energy)) {
-                var accepted_state = try candidate_state.clone(self.allocator);
+                const accepted_state = try candidate_state.clone(self.allocator);
                 if (self.current_state) |*old_state| {
                     old_state.deinit();
                 }
@@ -766,7 +766,7 @@ pub const EntangledStochasticSymmetryOptimizer = struct {
             self.statistics.current_energy = self.current_state.?.energy;
             self.statistics.entangled_pairs = self.current_state.?.entangledPairsCount();
 
-            const energy_change = std.math.fabs(self.current_state.?.energy - previous_energy);
+            const energy_change = @abs(self.current_state.?.energy - previous_energy);
             self.statistics.convergence_delta = energy_change;
             previous_energy = self.current_state.?.energy;
 
@@ -798,7 +798,7 @@ pub const EntangledStochasticSymmetryOptimizer = struct {
             var total_delta: f64 = 0.0;
             var delta_idx: usize = 1;
             while (delta_idx < self.energy_history.items.len) : (delta_idx += 1) {
-                total_delta += std.math.fabs(self.energy_history.items[delta_idx] - self.energy_history.items[delta_idx - 1]);
+                total_delta += @abs(self.energy_history.items[delta_idx] - self.energy_history.items[delta_idx - 1]);
             }
             self.statistics.average_move_delta = total_delta / @as(f64, @floatFromInt(self.energy_history.items.len - 1));
         }
@@ -954,7 +954,7 @@ pub const EntangledStochasticSymmetryOptimizer = struct {
 
         if (node1 == null or node2 == null) return;
 
-        const phase_diff = std.math.fabs(node1.?.phase - node2.?.phase);
+        const phase_diff = @abs(node1.?.phase - node2.?.phase);
         const correlation = self.prng.random().float(f64) * 0.5 + 0.5;
         const info = EntanglementInfo.init(correlation, phase_diff);
 
@@ -1036,7 +1036,7 @@ pub const EntangledStochasticSymmetryOptimizer = struct {
 
         node_iter = graph.nodes.iterator();
         while (node_iter.next()) |entry| {
-            const phase_diff = std.math.fabs(entry.value_ptr.phase - avg_phase);
+            const phase_diff = @abs(entry.value_ptr.phase - avg_phase);
             if (phase_diff < 0.1) {
                 try transforms.append(SymmetryTransform.init(.rotation_180));
                 break;
@@ -1289,7 +1289,7 @@ pub fn fractalDimensionObjective(graph: *const SelfSimilarRelationalGraph) f64 {
     const avg_dimension = total_dimension / @as(f64, @floatFromInt(edge_count));
     const target_dimension: f64 = 1.5;
 
-    return std.math.fabs(avg_dimension - target_dimension);
+    return @abs(avg_dimension - target_dimension);
 }
 
 test "SymmetryGroup basic operations" {
@@ -1341,7 +1341,7 @@ test "OptimizationState basic" {
     var graph = try SelfSimilarRelationalGraph.init(allocator);
     defer graph.deinit();
 
-    var node = try Node.init(allocator, "test", "data", Qubit.initBasis0(), 0.0);
+    const node = try Node.init(allocator, "test", "data", Qubit.initBasis0(), 0.0);
     try graph.addNode(node);
 
     var state = OptimizationState.init(allocator, &graph, 1.5, false);
@@ -1357,9 +1357,9 @@ test "OptimizationState entanglement" {
     var graph = try SelfSimilarRelationalGraph.init(allocator);
     defer graph.deinit();
 
-    var n1 = try Node.init(allocator, "n1", "d1", Qubit.initBasis0(), 0.0);
+    const n1 = try Node.init(allocator, "n1", "d1", Qubit.initBasis0(), 0.0);
     try graph.addNode(n1);
-    var n2 = try Node.init(allocator, "n2", "d2", Qubit.initBasis1(), 0.5);
+    const n2 = try Node.init(allocator, "n2", "d2", Qubit.initBasis1(), 0.5);
     try graph.addNode(n2);
 
     var state = OptimizationState.init(allocator, &graph, 1.0, false);
@@ -1431,9 +1431,9 @@ test "EntangledStochasticSymmetryOptimizer detectSymmetries" {
     var graph = try SelfSimilarRelationalGraph.init(allocator);
     defer graph.deinit();
 
-    var n1 = try Node.init(allocator, "n1", "d1", Qubit.initBasis0(), 0.0);
+    const n1 = try Node.init(allocator, "n1", "d1", Qubit.initBasis0(), 0.0);
     try graph.addNode(n1);
-    var n2 = try Node.init(allocator, "n2", "d2", Qubit.initBasis1(), 0.5);
+    const n2 = try Node.init(allocator, "n2", "d2", Qubit.initBasis1(), 0.5);
     try graph.addNode(n2);
 
     const transforms = try optimizer.detectSymmetries(&graph);
@@ -1452,16 +1452,16 @@ test "EntangledStochasticSymmetryOptimizer simple optimization" {
     var graph = try SelfSimilarRelationalGraph.init(allocator);
     defer graph.deinit();
 
-    var n1 = try Node.init(allocator, "n1", "data1", Qubit{ .a = Complex(f64).init(0.8, 0.2), .b = Complex(f64).init(0.0, 0.0) }, 0.1);
+    const n1 = try Node.init(allocator, "n1", "data1", Qubit{ .a = Complex(f64).init(0.8, 0.2), .b = Complex(f64).init(0.0, 0.0) }, 0.1);
     try graph.addNode(n1);
-    var n2 = try Node.init(allocator, "n2", "data2", Qubit{ .a = Complex(f64).init(0.3, 0.7), .b = Complex(f64).init(0.0, 0.0) }, 0.3);
+    const n2 = try Node.init(allocator, "n2", "data2", Qubit{ .a = Complex(f64).init(0.3, 0.7), .b = Complex(f64).init(0.0, 0.0) }, 0.3);
     try graph.addNode(n2);
-    var n3 = try Node.init(allocator, "n3", "data3", Qubit{ .a = Complex(f64).init(0.5, 0.5), .b = Complex(f64).init(0.0, 0.0) }, 0.5);
+    const n3 = try Node.init(allocator, "n3", "data3", Qubit{ .a = Complex(f64).init(0.5, 0.5), .b = Complex(f64).init(0.0, 0.0) }, 0.5);
     try graph.addNode(n3);
 
-    var e1 = Edge.init(allocator, "n1", "n2", .coherent, 0.8, Complex(f64).init(0.5, 0.5), 1.2);
+    const e1 = Edge.init(allocator, "n1", "n2", .coherent, 0.8, Complex(f64).init(0.5, 0.5), 1.2);
     try graph.addEdge("n1", "n2", e1);
-    var e2 = Edge.init(allocator, "n2", "n3", .entangled, 0.6, Complex(f64).init(0.3, 0.3), 1.1);
+    const e2 = Edge.init(allocator, "n2", "n3", .entangled, 0.6, Complex(f64).init(0.3, 0.3), 1.1);
     try graph.addEdge("n2", "n3", e2);
 
     _ = try optimizer.optimize(&graph, defaultGraphObjective);
@@ -1477,12 +1477,12 @@ test "Objective functions" {
     var graph = try SelfSimilarRelationalGraph.init(allocator);
     defer graph.deinit();
 
-    var n1 = try Node.init(allocator, "n1", "data1", Qubit{ .a = Complex(f64).init(0.8, 0.2), .b = Complex(f64).init(0.0, 0.0) }, 0.1);
+    const n1 = try Node.init(allocator, "n1", "data1", Qubit{ .a = Complex(f64).init(0.8, 0.2), .b = Complex(f64).init(0.0, 0.0) }, 0.1);
     try graph.addNode(n1);
-    var n2 = try Node.init(allocator, "n2", "data2", Qubit{ .a = Complex(f64).init(0.3, 0.7), .b = Complex(f64).init(0.0, 0.0) }, 0.3);
+    const n2 = try Node.init(allocator, "n2", "data2", Qubit{ .a = Complex(f64).init(0.3, 0.7), .b = Complex(f64).init(0.0, 0.0) }, 0.3);
     try graph.addNode(n2);
 
-    var e1 = Edge.init(allocator, "n1", "n2", .coherent, 0.8, Complex(f64).init(0.5, 0.5), 1.2);
+    const e1 = Edge.init(allocator, "n1", "n2", .coherent, 0.8, Complex(f64).init(0.5, 0.5), 1.2);
     try graph.addEdge("n1", "n2", e1);
 
     const default_energy = defaultGraphObjective(&graph);

@@ -460,28 +460,28 @@ pub const SSI = struct {
     }
 
     fn readBoolFlag(reader: anytype) !bool {
-        return (try reader.readInt(u8, .Little)) != 0;
+        return (try reader.readInt(u8, .little)) != 0;
     }
 
     fn writeSegment(writer: anytype, seg: Segment) !void {
-        try writer.writeInt(u64, seg.position, .Little);
+        try writer.writeInt(u64, seg.position, .little);
         try writer.writeInt(u32, floatToBits(seg.score), .Little);
-        try writer.writeInt(u64, seg.anchor_hash, .Little);
-        try writer.writeInt(usize, seg.tokens.len, .Little);
+        try writer.writeInt(u64, seg.anchor_hash, .little);
+        try writer.writeInt(usize, seg.tokens.len, .little);
         for (seg.tokens) |tok| {
-            try writer.writeInt(u32, tok, .Little);
+            try writer.writeInt(u32, tok, .little);
         }
     }
 
     fn readSegment(allocator: Allocator, reader: anytype) !Segment {
-        const position = try reader.readInt(u64, .Little);
-        const score = bitsToFloat(try reader.readInt(u32, .Little));
-        const anchor_hash = try reader.readInt(u64, .Little);
-        const token_len = try reader.readInt(usize, .Little);
+        const position = try reader.readInt(u64, .little);
+        const score = bitsToFloat(try reader.readInt(u32, .little));
+        const anchor_hash = try reader.readInt(u64, .little);
+        const token_len = try reader.readInt(usize, .little);
         const tokens = try allocator.alloc(u32, token_len);
         errdefer allocator.free(tokens);
         for (tokens) |*tok| {
-            tok.* = try reader.readInt(u32, .Little);
+            tok.* = try reader.readInt(u32, .little);
         }
         return .{
             .tokens = tokens,
@@ -493,8 +493,8 @@ pub const SSI = struct {
 
     fn serializeNode(node: *const Node, writer: anytype) !void {
         try writeBoolFlag(writer, node.is_leaf);
-        try writer.writeInt(usize, node.height, .Little);
-        try writer.writeInt(u64, node.hash, .Little);
+        try writer.writeInt(usize, node.height, .little);
+        try writer.writeInt(u64, node.hash, .little);
         if (node.is_leaf) {
             try writeBoolFlag(writer, node.segment != null);
             if (node.segment) |seg| {
@@ -506,7 +506,7 @@ pub const SSI = struct {
                 chain_len += 1;
                 chain = c.next;
             }
-            try writer.writeInt(usize, chain_len, .Little);
+            try writer.writeInt(usize, chain_len, .little);
             chain = node.collision_chain;
             while (chain) |c| {
                 try writeSegment(writer, c.seg);
@@ -515,7 +515,7 @@ pub const SSI = struct {
             return;
         }
         const children = node.children orelse return error.InvalidNodeState;
-        try writer.writeInt(usize, children.len, .Little);
+        try writer.writeInt(usize, children.len, .little);
         for (children) |maybe_child| {
             try writeBoolFlag(writer, maybe_child != null);
             if (maybe_child) |child| {
@@ -526,8 +526,8 @@ pub const SSI = struct {
 
     fn deserializeNode(allocator: Allocator, reader: anytype) !*Node {
         const is_leaf = try readBoolFlag(reader);
-        const height = try reader.readInt(usize, .Little);
-        const stored_hash = try reader.readInt(u64, .Little);
+        const height = try reader.readInt(usize, .little);
+        const stored_hash = try reader.readInt(u64, .little);
         const node = try allocator.create(Node);
         var cleanup = true;
         errdefer {
@@ -544,7 +544,7 @@ pub const SSI = struct {
             if (has_segment) {
                 node.segment = try readSegment(allocator, reader);
             }
-            const chain_len = try reader.readInt(usize, .Little);
+            const chain_len = try reader.readInt(usize, .little);
             var head: ?*CollisionNode = null;
             var tail: ?*CollisionNode = null;
             var index: usize = 0;
@@ -564,7 +564,7 @@ pub const SSI = struct {
             }
             node.collision_chain = head;
         } else {
-            const children_len = try reader.readInt(usize, .Little);
+            const children_len = try reader.readInt(usize, .little);
             if (children_len != bucket_count) {
                 return error.InvalidData;
             }
@@ -584,9 +584,9 @@ pub const SSI = struct {
     }
 
     pub fn serialize(self: *SSI, writer: anytype) !void {
-        try writer.writeInt(usize, self.max_height, .Little);
-        try writer.writeInt(usize, self.height, .Little);
-        try writer.writeInt(usize, self.size, .Little);
+        try writer.writeInt(usize, self.max_height, .little);
+        try writer.writeInt(usize, self.height, .little);
+        try writer.writeInt(usize, self.size, .little);
         try writeBoolFlag(writer, self.root != null);
         if (self.root) |root| {
             try serializeNode(root, writer);
@@ -595,9 +595,9 @@ pub const SSI = struct {
 
     pub fn deserialize(allocator: Allocator, reader: anytype) !SSI {
         var ssi = SSI.init(allocator);
-        ssi.max_height = try reader.readInt(usize, .Little);
-        ssi.height = try reader.readInt(usize, .Little);
-        ssi.size = try reader.readInt(usize, .Little);
+        ssi.max_height = try reader.readInt(usize, .little);
+        ssi.height = try reader.readInt(usize, .little);
+        ssi.size = try reader.readInt(usize, .little);
         const has_root = try readBoolFlag(reader);
         if (has_root) {
             ssi.root = try deserializeNode(allocator, reader);

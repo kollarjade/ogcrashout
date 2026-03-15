@@ -355,7 +355,7 @@ pub const Tensor = struct {
     }
 
     pub fn save(self: *const Tensor, writer: anytype) !void {
-        try writer.writeInt(u32, 0x54464453, .Little);
+        try writer.writeInt(u32, 0x54464453, .little);
         try writer.writeInt(u8, @intFromEnum(self.dtype), .Little);
         try writer.writeInt(u8, tensorFlagsToBits(self.flags), .Little);
         try writer.writeInt(u64, @intCast(self.shape.dims.len), .Little);
@@ -368,12 +368,12 @@ pub const Tensor = struct {
     }
 
     pub fn load(allocator: Allocator, reader: anytype) !Tensor {
-        const magic = try reader.readInt(u32, .Little);
+        const magic = try reader.readInt(u32, .little);
         if (magic != 0x54464453) return error.InvalidTensorFormat;
 
-        const dtype_raw = try reader.readInt(u8, .Little);
-        const flags_raw = try reader.readInt(u8, .Little);
-        const ndims_u64 = try reader.readInt(u64, .Little);
+        const dtype_raw = try reader.readInt(u8, .little);
+        const flags_raw = try reader.readInt(u8, .little);
+        const ndims_u64 = try reader.readInt(u64, .little);
         if (ndims_u64 > std.math.maxInt(usize)) return error.InvalidShape;
         const ndims: usize = @intCast(ndims_u64);
         var dims = try allocator.alloc(usize, ndims);
@@ -381,7 +381,7 @@ pub const Tensor = struct {
 
         var i: usize = 0;
         while (i < ndims) : (i += 1) {
-            const dim_u64 = try reader.readInt(u64, .Little);
+            const dim_u64 = try reader.readInt(u64, .little);
             if (dim_u64 > std.math.maxInt(usize)) return error.InvalidShape;
             dims[i] = @intCast(dim_u64);
         }
@@ -396,7 +396,7 @@ pub const Tensor = struct {
 
         i = 0;
         while (i < tensor.data.len) : (i += 1) {
-            const bits = try reader.readInt(u32, .Little);
+            const bits = try reader.readInt(u32, .little);
             tensor.data[i] = @as(f32, @bitCast(bits));
         }
 
@@ -404,13 +404,13 @@ pub const Tensor = struct {
     }
 
     pub fn fromCoreTensor(ct: *const core_tensor.Tensor, allocator: Allocator) !Tensor {
-        var t = try Tensor.init(allocator, ct.shape.dims);
+        const t = try Tensor.init(allocator, ct.shape.dims);
         @memcpy(t.data, ct.data);
         return t;
     }
 
     pub fn toCoreTensor(self: *const Tensor, allocator: Allocator) !core_tensor.Tensor {
-        var ct = try core_tensor.Tensor.init(allocator, self.shape.dims);
+        const ct = try core_tensor.Tensor.init(allocator, self.shape.dims);
         @memcpy(ct.data, self.data);
         return ct;
     }
@@ -923,7 +923,7 @@ pub const LRScheduler = struct {
                         if (hess.data.len == 0) {
                             lr = self.base_lr;
                         } else {
-                            var hess_values = try self.allocator.alloc(f32, hess.data.len);
+                            const hess_values = try self.allocator.alloc(f32, hess.data.len);
                             defer self.allocator.free(hess_values);
                             @memcpy(hess_values, hess.data);
                             std.mem.sort(f32, hess_values, {}, comptime std.sort.asc(f32));
@@ -1122,7 +1122,7 @@ pub const B200MemoryManager = struct {
 
     pub fn init(allocator: Allocator, config: B200OptimizationConfig) !B200MemoryManager {
         const tmem_size = config.tmem_size_mb * 1024 * 1024;
-        var tmem_pool = try allocator.alloc(u8, tmem_size);
+        const tmem_pool = try allocator.alloc(u8, tmem_size);
         errdefer allocator.free(tmem_pool);
 
         var prefetch_q = ArrayList(usize).init(allocator);
@@ -1949,7 +1949,7 @@ pub const SFD = struct {
         var buffered = std.io.bufferedWriter(file.writer());
         var writer = buffered.writer();
 
-        try writer.writeInt(u32, 0x53464431, .Little);
+        try writer.writeInt(u32, 0x53464431, .little);
         try writer.writeInt(u32, @as(u32, @bitCast(self.beta1)), .Little);
         try writer.writeInt(u32, @as(u32, @bitCast(self.beta2)), .Little);
         try writer.writeInt(u32, @as(u32, @bitCast(self.eps)), .Little);
@@ -1972,17 +1972,17 @@ pub const SFD = struct {
         defer file.close();
 
         var reader = file.reader();
-        const magic = try reader.readInt(u32, .Little);
+        const magic = try reader.readInt(u32, .little);
         if (magic != 0x53464431) return error.InvalidStateFormat;
 
-        const beta1 = @as(f32, @bitCast(try reader.readInt(u32, .Little)));
-        const beta2 = @as(f32, @bitCast(try reader.readInt(u32, .Little)));
-        const eps = @as(f32, @bitCast(try reader.readInt(u32, .Little)));
-        const clip_threshold = @as(f32, @bitCast(try reader.readInt(u32, .Little)));
-        const fisher_max = @as(f32, @bitCast(try reader.readInt(u32, .Little)));
-        const warmup_steps_u64 = try reader.readInt(u64, .Little);
-        const param_size_u64 = try reader.readInt(u64, .Little);
-        const step_count_u64 = try reader.readInt(u64, .Little);
+        const beta1 = @as(f32, @bitCast(try reader.readInt(u32, .little)));
+        const beta2 = @as(f32, @bitCast(try reader.readInt(u32, .little)));
+        const eps = @as(f32, @bitCast(try reader.readInt(u32, .little)));
+        const clip_threshold = @as(f32, @bitCast(try reader.readInt(u32, .little)));
+        const fisher_max = @as(f32, @bitCast(try reader.readInt(u32, .little)));
+        const warmup_steps_u64 = try reader.readInt(u64, .little);
+        const param_size_u64 = try reader.readInt(u64, .little);
+        const step_count_u64 = try reader.readInt(u64, .little);
 
         if (warmup_steps_u64 > std.math.maxInt(usize) or param_size_u64 > std.math.maxInt(usize) or step_count_u64 > std.math.maxInt(usize)) return error.InvalidStateFormat;
         if (@as(usize, @intCast(param_size_u64)) != self.param_size) return error.ShapeMismatch;
@@ -2265,7 +2265,7 @@ test "KFACBlock init" {
 }
 
 test "SpectralNormalizer" {
-    var normalizer = SpectralNormalizer.init(10);
+    const normalizer = SpectralNormalizer.init(10);
     try std.testing.expectEqual(@as(usize, 10), normalizer.power_iterations);
 }
 

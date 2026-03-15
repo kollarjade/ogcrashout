@@ -194,7 +194,7 @@ pub fn SimdVector(comptime T: type, comptime N: usize) type {
             }
             const mag = self.magnitude();
             const epsilon: T = if (T == f32) 1e-7 else 1e-15;
-            if (@fabs(mag) < epsilon) {
+            if (@abs(mag) < epsilon) {
                 return Self.init(0);
             }
             const mag_vec: VecType = @splat(mag);
@@ -228,7 +228,7 @@ pub fn SimdVector(comptime T: type, comptime N: usize) type {
                 return self;
             }
             if (is_float) {
-                return Self{ .data = @fabs(self.data) };
+                return Self{ .data = @abs(self.data) };
             } else {
                 const zero: VecType = @splat(0);
                 const neg = zero - self.data;
@@ -1624,8 +1624,8 @@ pub const VPU = struct {
         errdefer memory_pool.deinit();
         var vector_batch = VectorBatch.init(allocator, batch_size);
         errdefer vector_batch.deinit();
-        var matrix_ops = MatrixOps.init(allocator);
-        var relational_ops = RelationalVectorOps.init(allocator);
+        const matrix_ops = MatrixOps.init(allocator);
+        const relational_ops = RelationalVectorOps.init(allocator);
         var vector_cache = VectorCache.init(allocator, cache_size);
         errdefer vector_cache.deinit();
         return Self{
@@ -1668,7 +1668,7 @@ pub const VPU = struct {
     }
 
     pub fn computeGraphEmbeddings(self: *Self, graph: *SelfSimilarRelationalGraph) !ArrayList(F64x4) {
-        var embeddings = try self.relational_ops.vectorizeGraph(graph);
+        const embeddings = try self.relational_ops.vectorizeGraph(graph);
         self.relational_ops.batchNormalize(embeddings.items);
         self.statistics.graph_operations += 1;
         self.cycle_count += 1;

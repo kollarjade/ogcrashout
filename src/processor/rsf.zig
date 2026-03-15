@@ -91,7 +91,7 @@ fn freeTensorArray(allocator: Allocator, arr: []Tensor) void {
     allocator.free(arr);
 }
 
-const LayerCore = struct {
+pub const LayerCore = struct {
     s_weight: Tensor,
     t_weight: Tensor,
     s_bias: Tensor,
@@ -274,14 +274,14 @@ const LayerCore = struct {
         const batch_size = try self.validatePair(x1, x2);
         const bd = try checkedMul(batch_size, self.dim);
 
-        var scale = try self.allocator.alloc(f32, bd);
+        const scale = try self.allocator.alloc(f32, bd);
         defer self.allocator.free(scale);
         self.computeScaleInto(x2, scale);
 
         var i: usize = 0;
         while (i < bd) : (i += 1) x1.data[i] *= scale[i];
 
-        var trans = try self.allocator.alloc(f32, bd);
+        const trans = try self.allocator.alloc(f32, bd);
         defer self.allocator.free(trans);
         self.computeTranslationInto(x1, trans);
 
@@ -294,14 +294,14 @@ const LayerCore = struct {
         const batch_size = try self.validatePair(y1, y2);
         const bd = try checkedMul(batch_size, self.dim);
 
-        var trans = try self.allocator.alloc(f32, bd);
+        const trans = try self.allocator.alloc(f32, bd);
         defer self.allocator.free(trans);
         self.computeTranslationInto(y1, trans);
 
         var i: usize = 0;
         while (i < bd) : (i += 1) y2.data[i] -= trans[i];
 
-        var scale = try self.allocator.alloc(f32, bd);
+        const scale = try self.allocator.alloc(f32, bd);
         defer self.allocator.free(scale);
         self.computeScaleInto(y2, scale);
 
@@ -661,7 +661,7 @@ pub const RSFLayer = struct {
     }
 };
 
-const RSFCore = struct {
+pub const RSFCore = struct {
     allocator: Allocator,
     dim: usize,
     num_layers: usize,
@@ -975,9 +975,9 @@ fn backwardOnCore(core: *RSFCore, grad_output: *const Tensor, input: *const Tens
     defer next_dx2.deinit();
 
     const bd = try checkedMul(batch_size, core.dim);
-    var dy1_total = try core.allocator.alloc(f32, bd);
+    const dy1_total = try core.allocator.alloc(f32, bd);
     defer core.allocator.free(dy1_total);
-    var ds = try core.allocator.alloc(f32, bd);
+    const ds = try core.allocator.alloc(f32, bd);
     defer core.allocator.free(ds);
 
     const snaps = try captureModelGradSnapshots(core.allocator, core.layers);
@@ -1070,6 +1070,7 @@ fn invalidateGPUForMismatch(core: *RSFCore) void {
 
 pub const RSF = struct {
     id: u64 = 0,
+    ctrl: ?*RSFCore = null,
 
     pub fn init(allocator: Allocator, dim: usize, num_layers: usize) !RSF {
         return initWithConfig(allocator, dim, num_layers, .{});
@@ -1139,13 +1140,14 @@ pub const RSF = struct {
         }
 
         const id = try registerModelCore(core);
-        return RSF{ .id = id };
+        return RSF{ .id = id, .ctrl = core };
     }
 
     pub fn deinit(self: *RSF) void {
         const id = self.id;
         if (id == 0) return;
         self.id = 0;
+        self.ctrl = null;
         requestDestroyModelCore(id);
     }
 
@@ -1247,7 +1249,7 @@ pub const RSF = struct {
         var parent_dir = if (std.fs.path.isAbsolute(parent_path)) try std.fs.openDirAbsolute(parent_path, .{}) else try std.fs.cwd().openDir(parent_path, .{});
         defer parent_dir.close();
 
-        var temp = try createUniqueTempFile(&parent_dir, core.allocator, base_name);
+        const temp = try createUniqueTempFile(&parent_dir, core.allocator, base_name);
         defer core.allocator.free(temp.tmp_name);
 
         var file = temp.file;
@@ -1266,9 +1268,9 @@ pub const RSF = struct {
         hasher.update("RSF0");
         try w.writeInt(u32, SAVE_VERSION, .little);
         crcUpdateU32LE(&hasher, SAVE_VERSION);
-        try w.writeInt(u64, @intCast(core.num_layers), .little);
+        try w.writeInt(u64, @intCast(core.num_layers), .Little);
         crcUpdateU64LE(&hasher, @intCast(core.num_layers));
-        try w.writeInt(u64, @intCast(core.dim), .little);
+        try w.writeInt(u64, @intCast(core.dim), .Little);
         crcUpdateU64LE(&hasher, @intCast(core.dim));
 
         const clip_min_bits = @as(u32, @bitCast(core.cfg.clip_min));
@@ -1282,8 +1284,8 @@ pub const RSF = struct {
         try w.writeByte(gm_byte);
         crcUpdateU8(&hasher, gm_byte);
 
-        try w.writeInt(u64, @intCast(core.cfg.max_dim), .little);
-        try w.writeInt(u64, @intCast(core.cfg.max_layers), .little);
+        try w.writeInt(u64, @intCast(core.cfg.max_dim), .Little);
+        try w.writeInt(u64, @intCast(core.cfg.max_layers), .Little);
         crcUpdateU64LE(&hasher, @intCast(core.cfg.max_dim));
         crcUpdateU64LE(&hasher, @intCast(core.cfg.max_layers));
 
@@ -1315,7 +1317,7 @@ pub const RSF = struct {
             try writeTensorDataVersion4(w, &hasher, &layer.t_bias);
         }
 
-        try w.writeInt(u32, hasher.final(), .little);
+        try w.writeInt(u32, hasher.final(), .Little);
         try buffered.flush();
         try file.sync();
         file.close();
@@ -1530,8 +1532,8 @@ fn writeTensorDataVersion4(w: anytype, hasher: *std.hash.Crc32, t: *const Tensor
     const cols = t.shape.dims[1];
     try w.writeInt(u64, 2, .little);
     crcUpdateU64LE(hasher, 2);
-    try w.writeInt(u64, @intCast(rows), .little);
-    try w.writeInt(u64, @intCast(cols), .little);
+    try w.writeInt(u64, @intCast(rows), .Little);
+    try w.writeInt(u64, @intCast(cols), .Little);
     crcUpdateU64LE(hasher, @intCast(rows));
     crcUpdateU64LE(hasher, @intCast(cols));
     for (t.data) |v| {

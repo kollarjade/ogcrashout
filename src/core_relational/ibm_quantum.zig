@@ -16,7 +16,7 @@ pub const IBMQuantumClient = struct {
     pub fn initWithCrn(allocator: std.mem.Allocator, api_token: []const u8, crn_override: ?[]const u8) !IBMQuantumClient {
         const crn = if (crn_override) |c|
             try allocator.dupe(u8, c)
-        else if (std.os.getenv("IBM_QUANTUM_CRN")) |env_crn|
+        else if (std.posix.getenv("IBM_QUANTUM_CRN")) |env_crn|
             try allocator.dupe(u8, env_crn)
         else
             return error.MissingIBMQuantumCRN;

@@ -671,7 +671,7 @@ pub const MGT = struct {
             const id = entry.value_ptr.*;
             try writer.writeInt(u32, @as(u32, @intCast(word.len)), .Little);
             try writer.writeAll(word);
-            try writer.writeInt(u32, id, .Little);
+            try writer.writeInt(u32, id, .little);
         }
 
         try writer.writeInt(u32, @as(u32, @intCast(self.bpe_pairs.count())), .Little);
@@ -681,8 +681,8 @@ pub const MGT = struct {
             const merge = entry.value_ptr.*;
             try writer.writeInt(u32, @as(u32, @intCast(key.len)), .Little);
             try writer.writeAll(key);
-            try writer.writeInt(u32, merge.token_id, .Little);
-            try writer.writeInt(u32, merge.priority, .Little);
+            try writer.writeInt(u32, merge.token_id, .little);
+            try writer.writeInt(u32, merge.priority, .little);
         }
 
         const writeStringMap = struct {
@@ -692,7 +692,7 @@ pub const MGT = struct {
                 while (iter.next()) |e| {
                     try w.writeInt(u32, @as(u32, @intCast(e.key_ptr.*.len)), .Little);
                     try w.writeAll(e.key_ptr.*);
-                    try w.writeInt(u32, e.value_ptr.*, .Little);
+                    try w.writeInt(u32, e.value_ptr.*, .little);
                 }
             }
         };
@@ -707,7 +707,7 @@ pub const MGT = struct {
             const key = entry.key_ptr.*;
             try writer.writeInt(u32, @as(u32, @intCast(key.len)), .Little);
             try writer.writeAll(key);
-            try writer.writeInt(u64, entry.value_ptr.*, .Little);
+            try writer.writeInt(u64, entry.value_ptr.*, .little);
         }
     }
 
@@ -716,14 +716,14 @@ pub const MGT = struct {
         defer file.close();
         var reader = file.reader();
 
-        const size = try reader.readInt(u32, .Little);
+        const size = try reader.readInt(u32, .little);
         var i: usize = 0;
         while (i < size) : (i += 1) {
-            const word_len = try reader.readInt(u32, .Little);
+            const word_len = try reader.readInt(u32, .little);
             const word_buf = try self.allocator.alloc(u8, word_len);
             errdefer self.allocator.free(word_buf);
             try reader.readNoEof(word_buf);
-            const id = try reader.readInt(u32, .Little);
+            const id = try reader.readInt(u32, .little);
 
             try self.allocated_strings.append(word_buf);
             try self.token_to_id.put(word_buf, id);
@@ -734,15 +734,15 @@ pub const MGT = struct {
             }
         }
 
-        const bpe_count = try reader.readInt(u32, .Little);
+        const bpe_count = try reader.readInt(u32, .little);
         var j: usize = 0;
         while (j < bpe_count) : (j += 1) {
-            const key_len = try reader.readInt(u32, .Little);
+            const key_len = try reader.readInt(u32, .little);
             const key_buf = try self.allocator.alloc(u8, key_len);
             errdefer self.allocator.free(key_buf);
             try reader.readNoEof(key_buf);
-            const token_id = try reader.readInt(u32, .Little);
-            const priority = try reader.readInt(u32, .Little);
+            const token_id = try reader.readInt(u32, .little);
+            const priority = try reader.readInt(u32, .little);
 
             try self.allocated_strings.append(key_buf);
             try self.bpe_pairs.put(key_buf, .{ .token_id = token_id, .priority = priority });
@@ -750,14 +750,14 @@ pub const MGT = struct {
 
         const readStringMap = struct {
             fn read(map: *std.StringHashMap(u32), r: anytype, alloc: Allocator, alloc_list: *std.ArrayList([]u8)) !void {
-                const count = try r.readInt(u32, .Little);
+                const count = try r.readInt(u32, .little);
                 var k: usize = 0;
                 while (k < count) : (k += 1) {
-                    const len = try r.readInt(u32, .Little);
+                    const len = try r.readInt(u32, .little);
                     const buf = try alloc.alloc(u8, len);
                     errdefer alloc.free(buf);
                     try r.readNoEof(buf);
-                    const id = try r.readInt(u32, .Little);
+                    const id = try r.readInt(u32, .little);
 
                     try alloc_list.append(buf);
                     try map.put(buf, id);
@@ -769,14 +769,14 @@ pub const MGT = struct {
         try readStringMap.read(&self.suffixes, reader, self.allocator, &self.allocated_strings);
         try readStringMap.read(&self.roots, reader, self.allocator, &self.allocated_strings);
 
-        const anch_count = try reader.readInt(u32, .Little);
+        const anch_count = try reader.readInt(u32, .little);
         var l: usize = 0;
         while (l < anch_count) : (l += 1) {
-            const key_len = try reader.readInt(u32, .Little);
+            const key_len = try reader.readInt(u32, .little);
             const key_buf = try self.allocator.alloc(u8, key_len);
             errdefer self.allocator.free(key_buf);
             try reader.readNoEof(key_buf);
-            const val = try reader.readInt(u64, .Little);
+            const val = try reader.readInt(u64, .little);
 
             try self.allocated_strings.append(key_buf);
             try self.anchors.put(key_buf, val);

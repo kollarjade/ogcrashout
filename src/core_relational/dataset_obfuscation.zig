@@ -352,7 +352,7 @@ pub const DatasetFingerprint = struct {
             var lsh_hash: [32]u8 = undefined;
             lsh_hasher.final(&lsh_hash);
 
-            const bucket_key = std.mem.readInt(u64, lsh_hash[0..8], .Little);
+            const bucket_key = std.mem.readInt(u64, lsh_hash[0..8], .little);
 
             const gop = try self.lsh_buckets.getOrPut(bucket_key);
             if (!gop.found_existing) {
@@ -377,7 +377,7 @@ pub const DatasetFingerprint = struct {
             var lsh_hash: [32]u8 = undefined;
             lsh_hasher.final(&lsh_hash);
 
-            const bucket_key = std.mem.readInt(u64, lsh_hash[0..8], .Little);
+            const bucket_key = std.mem.readInt(u64, lsh_hash[0..8], .little);
 
             if (self.lsh_buckets.get(bucket_key)) |bucket| {
                 for (bucket.items) |stored_hash| {

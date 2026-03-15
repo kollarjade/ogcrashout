@@ -162,7 +162,7 @@ pub const QuantumState = struct {
 
     pub fn isNormalized(self: *const Self, epsilon: f64) bool {
         const prob = self.probability();
-        return @fabs(prob - 1.0) < epsilon;
+        return @abs(prob - 1.0) < epsilon;
     }
 
     pub fn fidelity(self: *const Self, other: *const Self) f64 {
@@ -522,7 +522,7 @@ pub const RelationalQuantumLogic = struct {
         var result_state = QuantumState.init(
             result_real,
             result_imag,
-            @fabs(state1.phase - state2.phase),
+            @abs(state1.phase - state2.phase),
             (state1.entanglement_degree + state2.entanglement_degree) / 2.0,
         );
         result_state.normalize();
@@ -756,7 +756,7 @@ pub const RelationalQuantumLogic = struct {
 
         var self = Self.init(allocator);
 
-        const state_count = std.mem.readInt(u64, data[0..8], .Little);
+        const state_count = std.mem.readInt(u64, data[0..8], .little);
         var offset: usize = 8;
 
         var i: u64 = 0;

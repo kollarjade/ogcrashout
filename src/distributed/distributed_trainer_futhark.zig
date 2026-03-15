@@ -375,7 +375,7 @@ pub const DistributedTrainerFuthark = struct {
         var buffered_writer = std.io.bufferedWriter(file.writer());
         var writer = buffered_writer.writer();
 
-        try writer.writeInt(u32, self.config.checkpoint_version, .Little);
+        try writer.writeInt(u32, self.config.checkpoint_version, .little);
         try writer.writeInt(u64, @as(u64, @intCast(self.global_step)), .Little);
         try writer.writeInt(u64, @as(u64, @intCast(self.model_dim)), .Little);
 
@@ -424,13 +424,13 @@ pub const DistributedTrainerFuthark = struct {
 
         var reader = file.reader();
 
-        const version = try reader.readInt(u32, .Little);
+        const version = try reader.readInt(u32, .little);
         if (version != self.config.checkpoint_version) {
             return error.CheckpointVersionMismatch;
         }
 
-        self.global_step = @intCast(try reader.readInt(u64, .Little));
-        const saved_model_dim = try reader.readInt(u64, .Little);
+        self.global_step = @intCast(try reader.readInt(u64, .little));
+        const saved_model_dim = try reader.readInt(u64, .little);
 
         if (saved_model_dim != self.model_dim) {
             return error.ModelDimMismatch;
@@ -441,7 +441,7 @@ pub const DistributedTrainerFuthark = struct {
         defer self.allocator.free(s_weights);
 
         for (s_weights) |*w| {
-            const bits = try reader.readInt(u32, .Little);
+            const bits = try reader.readInt(u32, .little);
             const f32_val: f32 = @bitCast(bits);
             w.* = @floatCast(f32_val);
         }
@@ -450,7 +450,7 @@ pub const DistributedTrainerFuthark = struct {
         defer self.allocator.free(t_weights);
 
         for (t_weights) |*w| {
-            const bits = try reader.readInt(u32, .Little);
+            const bits = try reader.readInt(u32, .little);
             const f32_val: f32 = @bitCast(bits);
             w.* = @floatCast(f32_val);
         }

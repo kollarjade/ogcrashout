@@ -4,4 +4,28 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["futhark"]
+packages = ["futhark", "zig"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "zig build && ./zig-out/bin/jaide-inference-server --port 8080"
+waitForPort = 8080
+
+[workflows.workflow.metadata]
+outputType = "console"

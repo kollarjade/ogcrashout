@@ -306,7 +306,7 @@ const TerminalColors = struct {
     red: []const u8,
 
     fn detect() TerminalColors {
-        if (std.os.getenv("NO_COLOR") != null) {
+        if (std.posix.getenv("NO_COLOR") != null) {
             return TerminalColors{ .enabled = false, .reset = "", .bold = "", .cyan = "", .green = "", .yellow = "", .red = "" };
         }
         const stdout = std.io.getStdOut();
@@ -418,7 +418,7 @@ fn runKgruTest(allocator: std.mem.Allocator) !void {
         var params_changed = false;
         pi = 0;
         while (pi < param_size) : (pi += 1) {
-            if (std.math.fabs(params.data[pi] - (@as(f32, @floatFromInt(pi)) * MainConfig.PARAM_UPDATE_DELTA)) > MainConfig.GRADIENT_THRESHOLD) {
+            if (@abs(params.data[pi] - (@as(f32, @floatFromInt(pi)) * MainConfig.PARAM_UPDATE_DELTA)) > MainConfig.GRADIENT_THRESHOLD) {
                 params_changed = true;
                 break;
             }
@@ -818,7 +818,7 @@ fn runTraining(allocator: std.mem.Allocator, config: *const Config) !void {
     var activations = try Tensor.init(allocator, &.{ layers + 1, tensor_dim });
     defer activations.deinit();
 
-    var logits = try allocator.alloc(f32, vocab_size);
+    const logits = try allocator.alloc(f32, vocab_size);
     defer allocator.free(logits);
 
     var probs = try allocator.alloc(f32, vocab_size);
@@ -1127,7 +1127,7 @@ fn loadDatasetSamples(allocator: std.mem.Allocator, mgt: *MGT, dataset_path: []c
     var buf_reader = std.io.bufferedReader(file.reader());
     var reader = buf_reader.reader();
 
-    var line_buf = try allocator.alloc(u8, MainConfig.MAX_LINE_LENGTH);
+    const line_buf = try allocator.alloc(u8, MainConfig.MAX_LINE_LENGTH);
     defer allocator.free(line_buf);
 
     var lines_read: usize = 0;
@@ -1282,7 +1282,7 @@ fn validateModel(allocator: std.mem.Allocator, rsf: *RSF, mgt: *MGT, config: *co
         const target_f64 = @as(f64, targets[i]);
         const diff = pred_f64 - target_f64;
         mse += diff * diff;
-        mae += std.math.fabs(diff);
+        mae += @abs(diff);
         ss_res += diff * diff;
         const target_diff = target_f64 - @as(f64, mean_target);
         ss_tot += target_diff * target_diff;
@@ -1328,8 +1328,8 @@ fn saveRSF(rsf: *const RSF, path: []const u8) !void {
     var buf_writer = std.io.bufferedWriter(file.writer());
     const writer = buf_writer.writer();
 
-    try writer.writeInt(u32, MainConfig.FILE_MAGIC_RSF, .Little);
-    try writer.writeInt(u32, MainConfig.FILE_VERSION, .Little);
+    try writer.writeInt(u32, MainConfig.FILE_MAGIC_RSF, .little);
+    try writer.writeInt(u32, MainConfig.FILE_VERSION, .little);
     const sc = rsf.ctrl orelse return error.NotInitialized;
     try writer.writeInt(u64, @as(u64, @intCast(sc.num_layers)), .Little);
     try writer.writeInt(u64, @as(u64, @intCast(sc.dim)), .Little);
@@ -1353,8 +1353,8 @@ fn saveMGT(mgt: *const MGT, path: []const u8) !void {
     var buf_writer = std.io.bufferedWriter(file.writer());
     const writer = buf_writer.writer();
 
-    try writer.writeInt(u32, MainConfig.FILE_MAGIC_MGT, .Little);
-    try writer.writeInt(u32, MainConfig.FILE_VERSION, .Little);
+    try writer.writeInt(u32, MainConfig.FILE_MAGIC_MGT, .little);
+    try writer.writeInt(u32, MainConfig.FILE_VERSION, .little);
 
     const vocab_size = mgt.vocabSize();
     if (vocab_size > MainConfig.MAX_VOCAB_SIZE) return error.VocabTooLarge;
@@ -1383,7 +1383,7 @@ fn saveMGT(mgt: *const MGT, path: []const u8) !void {
         if (token.len > MainConfig.MAX_TOKEN_LENGTH) return error.TokenTooLong;
         try writer.writeInt(u32, @as(u32, @intCast(token.len)), .Little);
         try writer.writeAll(token);
-        try writer.writeInt(u32, id, .Little);
+        try writer.writeInt(u32, id, .little);
     }
 
     try buf_writer.flush();
@@ -1445,8 +1445,8 @@ const Projection = struct {
         var buf_writer = std.io.bufferedWriter(file.writer());
         const writer = buf_writer.writer();
 
-        try writer.writeInt(u32, MainConfig.FILE_MAGIC_PROJ, .Little);
-        try writer.writeInt(u32, MainConfig.FILE_VERSION, .Little);
+        try writer.writeInt(u32, MainConfig.FILE_MAGIC_PROJ, .little);
+        try writer.writeInt(u32, MainConfig.FILE_VERSION, .little);
         try writer.writeInt(u64, @as(u64, @intCast(self.hidden_dim)), .Little);
         try writer.writeInt(u64, @as(u64, @intCast(self.vocab_size)), .Little);
 
@@ -1467,12 +1467,12 @@ const Projection = struct {
         var buf_reader = std.io.bufferedReader(file.reader());
         const reader = buf_reader.reader();
 
-        const magic = try reader.readInt(u32, .Little);
+        const magic = try reader.readInt(u32, .little);
         if (magic != MainConfig.FILE_MAGIC_PROJ) return error.InvalidFormat;
-        _ = try reader.readInt(u32, .Little);
+        _ = try reader.readInt(u32, .little);
 
-        const hidden_dim = @as(usize, @intCast(try reader.readInt(u64, .Little)));
-        const vocab_sz = @as(usize, @intCast(try reader.readInt(u64, .Little)));
+        const hidden_dim = @as(usize, @intCast(try reader.readInt(u64, .little)));
+        const vocab_sz = @as(usize, @intCast(try reader.readInt(u64, .little)));
 
         if (hidden_dim != config.embedding_dim * 2) return error.Mismatch;
 
@@ -1482,7 +1482,7 @@ const Projection = struct {
 
         var wi: usize = 0;
         while (wi < w_size) : (wi += 1) {
-            weights.data[wi] = @bitCast(try reader.readInt(u32, .Little));
+            weights.data[wi] = @bitCast(try reader.readInt(u32, .little));
         }
 
         var bias = try Tensor.init(alloc, &.{vocab_sz});
@@ -1490,7 +1490,7 @@ const Projection = struct {
 
         var bi: usize = 0;
         while (bi < vocab_sz) : (bi += 1) {
-            bias.data[bi] = @bitCast(try reader.readInt(u32, .Little));
+            bias.data[bi] = @bitCast(try reader.readInt(u32, .little));
         }
 
         return Projection{
@@ -1510,12 +1510,12 @@ fn loadRSFWeights(rsf: *RSF, path: []const u8) !void {
     var buf_reader = std.io.bufferedReader(file.reader());
     const reader = buf_reader.reader();
 
-    const magic = try reader.readInt(u32, .Little);
+    const magic = try reader.readInt(u32, .little);
     if (magic != MainConfig.FILE_MAGIC_RSF) return error.InvalidFormat;
-    _ = try reader.readInt(u32, .Little);
+    _ = try reader.readInt(u32, .little);
 
-    const num_layers = @as(usize, @intCast(try reader.readInt(u64, .Little)));
-    const dim = @as(usize, @intCast(try reader.readInt(u64, .Little)));
+    const num_layers = @as(usize, @intCast(try reader.readInt(u64, .little)));
+    const dim = @as(usize, @intCast(try reader.readInt(u64, .little)));
 
     const lc = rsf.ctrl orelse return error.NotInitialized;
     if (num_layers != lc.num_layers or dim != lc.dim) return error.DimensionMismatch;
@@ -1525,19 +1525,19 @@ fn loadRSFWeights(rsf: *RSF, path: []const u8) !void {
         const layer = &lc.layers[l];
         var wi: usize = 0;
         while (wi < layer.s_weight.data.len) : (wi += 1) {
-            layer.s_weight.data[wi] = @bitCast(try reader.readInt(u32, .Little));
+            layer.s_weight.data[wi] = @bitCast(try reader.readInt(u32, .little));
         }
         wi = 0;
         while (wi < layer.t_weight.data.len) : (wi += 1) {
-            layer.t_weight.data[wi] = @bitCast(try reader.readInt(u32, .Little));
+            layer.t_weight.data[wi] = @bitCast(try reader.readInt(u32, .little));
         }
         wi = 0;
         while (wi < layer.s_bias.data.len) : (wi += 1) {
-            layer.s_bias.data[wi] = @bitCast(try reader.readInt(u32, .Little));
+            layer.s_bias.data[wi] = @bitCast(try reader.readInt(u32, .little));
         }
         wi = 0;
         while (wi < layer.t_bias.data.len) : (wi += 1) {
-            layer.t_bias.data[wi] = @bitCast(try reader.readInt(u32, .Little));
+            layer.t_bias.data[wi] = @bitCast(try reader.readInt(u32, .little));
         }
     }
 }
@@ -1595,7 +1595,7 @@ fn sampleTopK(logits: []f32, k_param: usize, prng: *std.rand.DefaultPrng) !u32 {
         top_k_logits[i] /= @floatCast(sum_exp);
     }
 
-    var r = prng.random().float(f64);
+    const r = prng.random().float(f64);
     var cumulative: f64 = 0.0;
 
     i = 0;
@@ -1622,7 +1622,7 @@ fn generateText(allocator: std.mem.Allocator, rsf: *RSF, proj: *const Projection
 
     try generated.appendSlice(prompt_tokens);
 
-    var logits = try allocator.alloc(f32, proj.vocab_size);
+    const logits = try allocator.alloc(f32, proj.vocab_size);
     defer allocator.free(logits);
 
     var prng = std.rand.DefaultPrng.init(MainConfig.PRNG_SEED_SYNTHETIC);
@@ -1696,7 +1696,7 @@ fn runInteractiveREPL(allocator: std.mem.Allocator, mgt: *MGT, ssi: *SSI, ranker
 
     var interaction_count: u64 = 0;
 
-    var line_buf = try allocator.alloc(u8, MainConfig.REPL_LINE_BUFFER_SIZE);
+    const line_buf = try allocator.alloc(u8, MainConfig.REPL_LINE_BUFFER_SIZE);
     defer allocator.free(line_buf);
 
     while (true) {

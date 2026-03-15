@@ -62,7 +62,7 @@ pub const QuantumSubgraph = struct {
         for (self.edge_keys.items) |key| {
             if (graph.edges.get(key)) |edge_list| {
                 for (edge_list.items) |edge| {
-                    total_ent += @fabs(edge.quantum_correlation.magnitude());
+                    total_ent += @abs(edge.quantum_correlation.magnitude());
                     total_dim += edge.fractal_dimension;
                     edge_count += 1;
                 }
@@ -404,12 +404,12 @@ test "quantum_task_adapter_identify_subgraphs" {
     var graph = try SelfSimilarRelationalGraph.init(allocator);
     defer graph.deinit();
 
-    var n1 = try Node.init(allocator, "n1", "data1", Qubit{ .a = Complex(f64).init(0.7, 0.7), .b = Complex(f64).init(0.0, 0.0) }, 0.5);
+    const n1 = try Node.init(allocator, "n1", "data1", Qubit{ .a = Complex(f64).init(0.7, 0.7), .b = Complex(f64).init(0.0, 0.0) }, 0.5);
     try graph.addNode(n1);
-    var n2 = try Node.init(allocator, "n2", "data2", Qubit{ .a = Complex(f64).init(0.6, 0.8), .b = Complex(f64).init(0.0, 0.0) }, 0.3);
+    const n2 = try Node.init(allocator, "n2", "data2", Qubit{ .a = Complex(f64).init(0.6, 0.8), .b = Complex(f64).init(0.0, 0.0) }, 0.3);
     try graph.addNode(n2);
 
-    var e1 = Edge.init(allocator, "n1", "n2", .entangled, 0.9, Complex(f64).init(0.8, 0.8), 2.0);
+    const e1 = Edge.init(allocator, "n1", "n2", .entangled, 0.9, Complex(f64).init(0.8, 0.8), 2.0);
     try graph.addEdge("n1", "n2", e1);
 
     var adapter = QuantumTaskAdapter.init(allocator, &graph);

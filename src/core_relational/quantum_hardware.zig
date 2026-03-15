@@ -1832,7 +1832,7 @@ pub const IBMQuantumClient = struct {
             std.rand.DefaultPrng.init(@as(u64, @truncate(@as(u128, @bitCast(std.time.nanoTimestamp())))));
         const random = prng.random();
 
-        var probabilities = try result.allocator.alloc(f64, dim);
+        const probabilities = try result.allocator.alloc(f64, dim);
         defer result.allocator.free(probabilities);
 
         var total: f64 = 0.0;
@@ -1909,7 +1909,7 @@ pub const IBMQuantumClient = struct {
         const n = circuit.num_qubits;
         const dim = @as(usize, 1) << @intCast(@min(n, QuantumConfig.MAX_QUBITS_SIMULATION));
 
-        var probabilities = try result.allocator.alloc(f64, dim);
+        const probabilities = try result.allocator.alloc(f64, dim);
         defer result.allocator.free(probabilities);
 
         var total: f64 = 0.0;

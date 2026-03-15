@@ -268,7 +268,7 @@ pub const RouteKey = struct {
 
 pub const RouteKeyContext = struct {
     pub fn hash(_: @This(), key: RouteKey) u64 {
-        var hasher = std.hash.Wyhash.init(blk: { var seed_buf: [8]u8 = undefined; std.crypto.random.bytes(&seed_buf); break :blk std.mem.readInt(u64, &seed_buf, .Little); });
+        var hasher = std.hash.Wyhash.init(blk: { var seed_buf: [8]u8 = undefined; std.crypto.random.bytes(&seed_buf); break :blk std.mem.readInt(u64, &seed_buf, .little); });
         hasher.update(std.mem.asBytes(&key.source));
         hasher.update(std.mem.asBytes(&key.destination));
         return hasher.final();
@@ -363,7 +363,7 @@ pub const AsynchronousNoC = struct {
                 const dst_id = dst_entry.key_ptr.*;
                 if (src_id != dst_id) {
                     const route_key = RouteKey{ .source = src_id, .destination = dst_id };
-                    var path = try self.computeXYRoute(src_id, dst_id);
+                    const path = try self.computeXYRoute(src_id, dst_id);
                     try self.routing_table.put(route_key, path);
                 }
             }
@@ -423,7 +423,7 @@ pub const AsynchronousNoC = struct {
     pub fn routeMessages(self: *AsynchronousNoC) !usize {
         var routed_count: usize = 0;
         while (self.message_buffer.count() > 0) {
-            var entry = self.message_buffer.remove();
+            const entry = self.message_buffer.remove();
             const message = entry.message;
 
             const route_key = RouteKey{ .source = message.source_core, .destination = message.target_core };
@@ -434,7 +434,7 @@ pub const AsynchronousNoC = struct {
             }
 
             if (self.cores.getPtr(message.target_core)) |target_core| {
-                var msg_clone = try message.clone(self.allocator);
+                const msg_clone = try message.clone(self.allocator);
                 try target_core.enqueueMessage(msg_clone);
                 routed_count += 1;
             }
@@ -471,7 +471,7 @@ pub const AsynchronousNoC = struct {
 
 const StringContext = struct {
     pub fn hash(_: @This(), key: []const u8) u64 {
-        var hasher = std.hash.Wyhash.init(blk: { var seed_buf: [8]u8 = undefined; std.crypto.random.bytes(&seed_buf); break :blk std.mem.readInt(u64, &seed_buf, .Little); });
+        var hasher = std.hash.Wyhash.init(blk: { var seed_buf: [8]u8 = undefined; std.crypto.random.bytes(&seed_buf); break :blk std.mem.readInt(u64, &seed_buf, .little); });
         hasher.update(key);
         return hasher.final();
     }
@@ -651,7 +651,7 @@ pub const GraphIsomorphismProcessor = struct {
 
             for (subgraph_nodes) |node_id| {
                 if (main_graph.nodes.get(node_id)) |node| {
-                    var node_clone = try node.clone(self.allocator);
+                    const node_clone = try node.clone(self.allocator);
                     try subgraph.addNode(node_clone);
                 }
             }
@@ -669,7 +669,7 @@ pub const GraphIsomorphismProcessor = struct {
 
                 if (source_in_subgraph and target_in_subgraph) {
                     for (edge_entry.value_ptr.items) |edge| {
-                        var edge_clone = try edge.clone(self.allocator);
+                        const edge_clone = try edge.clone(self.allocator);
                         try subgraph.addEdge(edge_clone);
                     }
                 }
@@ -710,7 +710,7 @@ pub const EdgeKeyForWeighting = struct {
 
 const EdgeKeyForWeightingContext = struct {
     pub fn hash(_: @This(), key: EdgeKeyForWeighting) u64 {
-        var hasher = std.hash.Wyhash.init(blk: { var seed_buf: [8]u8 = undefined; std.crypto.random.bytes(&seed_buf); break :blk std.mem.readInt(u64, &seed_buf, .Little); });
+        var hasher = std.hash.Wyhash.init(blk: { var seed_buf: [8]u8 = undefined; std.crypto.random.bytes(&seed_buf); break :blk std.mem.readInt(u64, &seed_buf, .little); });
         hasher.update(key.source);
         hasher.update(&[_]u8{0});
         hasher.update(key.target);
@@ -1175,7 +1175,7 @@ pub const RelationalGraphProcessingUnit = struct {
 
                 for (core_nodes) |node_id| {
                     if (graph.nodes.get(node_id)) |node| {
-                        var node_clone = try node.clone(self.allocator);
+                        const node_clone = try node.clone(self.allocator);
                         try local_graph.addNode(node_clone);
                     }
                 }
@@ -1193,7 +1193,7 @@ pub const RelationalGraphProcessingUnit = struct {
 
                     if (source_in_core or target_in_core) {
                         for (edge_entry.value_ptr.items) |edge| {
-                            var edge_clone = try edge.clone(self.allocator);
+                            const edge_clone = try edge.clone(self.allocator);
                             try local_graph.addEdge(edge_clone.source, edge_clone.target, edge_clone);
                         }
                     }
@@ -1335,7 +1335,7 @@ pub const RelationalGraphProcessingUnit = struct {
                 for (core.neighbors.items) |neighbor_id| {
                     var buffer: [64]u8 = undefined;
                     const payload = std.fmt.bufPrint(&buffer, "iteration:{d}", .{iteration}) catch "";
-                    var message = try NoCMessage.init(
+                    const message = try NoCMessage.init(
                         self.allocator,
                         core_id,
                         neighbor_id,
@@ -1380,7 +1380,7 @@ pub const RelationalGraphProcessingUnit = struct {
             while (node_iter.next()) |node_entry| {
                 const node_id = node_entry.key_ptr.*;
                 if (!new_global.nodes.contains(node_id)) {
-                    var node_clone = try node_entry.value_ptr.clone(self.allocator);
+                    const node_clone = try node_entry.value_ptr.clone(self.allocator);
                     try new_global.addNode(node_clone);
                 }
             }
@@ -1388,7 +1388,7 @@ pub const RelationalGraphProcessingUnit = struct {
             var edge_iter = core.local_graph.?.edges.iterator();
             while (edge_iter.next()) |edge_entry| {
                 for (edge_entry.value_ptr.items) |edge| {
-                    var edge_clone = try edge.clone(self.allocator);
+                    const edge_clone = try edge.clone(self.allocator);
                     try new_global.addEdge(edge_clone);
                 }
             }
@@ -1539,7 +1539,7 @@ test "AsynchronousNoC sendMessage and routeMessages" {
     var noc = try AsynchronousNoC.init(allocator, 4, 4);
     defer noc.deinit();
 
-    var msg = try NoCMessage.init(allocator, 0, 15, .data_transfer, "test", 0);
+    const msg = try NoCMessage.init(allocator, 0, 15, .data_transfer, "test", 0);
     const sent = try noc.sendMessage(msg);
     try testing.expect(sent);
     try testing.expectEqual(@as(usize, 1), noc.total_messages);
@@ -1611,9 +1611,9 @@ test "GraphIsomorphismProcessor" {
     var graph1 = try SelfSimilarRelationalGraph.init(allocator);
     defer graph1.deinit();
 
-    var node1 = try Node.init(allocator, "n1", "data1", Qubit.initBasis0(), 0.0);
+    const node1 = try Node.init(allocator, "n1", "data1", Qubit.initBasis0(), 0.0);
     try graph1.addNode(node1);
-    var node2 = try Node.init(allocator, "n2", "data2", Qubit.initBasis1(), 0.0);
+    const node2 = try Node.init(allocator, "n2", "data2", Qubit.initBasis1(), 0.0);
     try graph1.addNode(node2);
 
     const canonical = try processor.computeCanonicalForm(&graph1);
@@ -1649,13 +1649,13 @@ test "RelationalGraphProcessingUnit distributeGraph" {
     var graph = try SelfSimilarRelationalGraph.init(allocator);
     defer graph.deinit();
 
-    var n1 = try Node.init(allocator, "n1", "d1", Qubit.initBasis0(), 0.0);
+    const n1 = try Node.init(allocator, "n1", "d1", Qubit.initBasis0(), 0.0);
     try graph.addNode(n1);
-    var n2 = try Node.init(allocator, "n2", "d2", Qubit.initBasis0(), 0.0);
+    const n2 = try Node.init(allocator, "n2", "d2", Qubit.initBasis0(), 0.0);
     try graph.addNode(n2);
-    var n3 = try Node.init(allocator, "n3", "d3", Qubit.initBasis0(), 0.0);
+    const n3 = try Node.init(allocator, "n3", "d3", Qubit.initBasis0(), 0.0);
     try graph.addNode(n3);
-    var n4 = try Node.init(allocator, "n4", "d4", Qubit.initBasis0(), 0.0);
+    const n4 = try Node.init(allocator, "n4", "d4", Qubit.initBasis0(), 0.0);
     try graph.addNode(n4);
 
     try rpgu.distributeGraph(&graph);

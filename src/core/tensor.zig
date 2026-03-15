@@ -138,12 +138,12 @@ pub const Tensor = struct {
     }
 
     pub fn retain(self: *Tensor) void {
-        _ = @atomicRmw(usize, self.refcount, .Add, 1, .AcqRel);
+        _ = @atomicRmw(usize, self.refcount, .Add, 1, .acq_rel);
         self.markShared();
     }
 
     pub fn release(self: *Tensor) void {
-        const prev = @atomicRmw(usize, self.refcount, .Sub, 1, .AcqRel);
+        const prev = @atomicRmw(usize, self.refcount, .Sub, 1, .acq_rel);
         if (prev == 1) {
             self.deallocate();
         } else {
@@ -229,7 +229,7 @@ pub const Tensor = struct {
             expected *= self.shape.dims[i - 1];
         }
 
-        const old_refcount = @atomicRmw(usize, self.refcount, .Sub, 1, .AcqRel);
+        const old_refcount = @atomicRmw(usize, self.refcount, .Sub, 1, .acq_rel);
         const was_last = (old_refcount == 1);
         const old_base_data = self.base_data;
         const old_refcount_ptr = self.refcount;
@@ -698,7 +698,7 @@ pub const Tensor = struct {
         var flat: usize = 0;
         while (flat < total) : (flat += 1) {
             const idx = try self.computeIndex(indices);
-            self.data[idx] = @fabs(self.data[idx]);
+            self.data[idx] = @abs(self.data[idx]);
             var i: usize = self.shape.dims.len;
             while (i > 0) : (i -= 1) {
                 indices[i - 1] += 1;
@@ -896,7 +896,7 @@ pub const Tensor = struct {
     }
 
     pub fn broadcast(self: *Tensor, target_shape: []const usize) !Tensor {
-        var new_dims = try self.allocator.alloc(usize, target_shape.len);
+        const new_dims = try self.allocator.alloc(usize, target_shape.len);
         errdefer self.allocator.free(new_dims);
         @memcpy(new_dims, target_shape);
         
@@ -1642,7 +1642,7 @@ pub const Tensor = struct {
             const val = try self.get(indices);
             var found = false;
             for (vals.items) |v| {
-                if (@fabs(v - val) < 1e-10) {
+                if (@abs(v - val) < 1e-10) {
                     found = true;
                     break;
                 }
@@ -1664,7 +1664,7 @@ pub const Tensor = struct {
             }
         };
         std.mem.sort(f32, vals.items, {}, Context.lessThan);
-        var unique_t = try init(allocator, &.{vals.items.len});
+        const unique_t = try init(allocator, &.{vals.items.len});
         @memcpy(unique_t.data, vals.items);
         return unique_t;
     }
@@ -1699,7 +1699,7 @@ pub const Tensor = struct {
         while (flat < total) : (flat += 1) {
             const a = try self.get(indices);
             const b = try other.get(indices);
-            if (@fabs(a - b) > atol + rtol * @fabs(b)) return false;
+            if (@abs(a - b) > atol + rtol * @abs(b)) return false;
             var i: usize = self.shape.dims.len;
             while (i > 0) : (i -= 1) {
                 indices[i - 1] += 1;
@@ -1797,10 +1797,10 @@ pub const Tensor = struct {
                 radius_sq += val * val;
             }
             const radius = @sqrt(radius_sq);
-            if (@fabs(radius - last_radius) < tol) return @fabs(radius);
+            if (@abs(radius - last_radius) < tol) return @abs(radius);
             last_radius = radius;
         }
-        return @fabs(last_radius);
+        return @abs(last_radius);
     }
 
     pub fn normL2(self: *const Tensor) !f32 {
@@ -1871,7 +1871,7 @@ pub const Tensor = struct {
         var flat: usize = 0;
         while (flat < len) : (flat += 1) {
             const val = try self.get(indices);
-            total += math.pow(f32, @fabs(val), order);
+            total += math.pow(f32, @abs(val), order);
             var i: usize = self.shape.dims.len;
             while (i > 0) : (i -= 1) {
                 indices[i - 1] += 1;
@@ -1899,10 +1899,10 @@ pub const Tensor = struct {
         i = 0;
         while (i < n) : (i += 1) {
             var pivot_row = i;
-            var max_val = @fabs(try aug.get(&.{ i, i }));
+            var max_val = @abs(try aug.get(&.{ i, i }));
             var r: usize = i + 1;
             while (r < n) : (r += 1) {
-                const val = @fabs(try aug.get(&.{ r, i }));
+                const val = @abs(try aug.get(&.{ r, i }));
                 if (val > max_val) {
                     max_val = val;
                     pivot_row = r;
@@ -1954,10 +1954,10 @@ pub const Tensor = struct {
         var i: usize = 0;
         while (i < n) : (i += 1) {
             var pivot_row = i;
-            var max_val = @fabs(try mat.get(&.{ i, i }));
+            var max_val = @abs(try mat.get(&.{ i, i }));
             var r: usize = i + 1;
             while (r < n) : (r += 1) {
-                const val = @fabs(try mat.get(&.{ r, i }));
+                const val = @abs(try mat.get(&.{ r, i }));
                 if (val > max_val) {
                     max_val = val;
                     pivot_row = r;
@@ -1998,10 +1998,10 @@ pub const Tensor = struct {
         var i: usize = 0;
         while (i < n) : (i += 1) {
             var pivot_row = i;
-            var max_val = @fabs(try u.get(&.{ i, i }));
+            var max_val = @abs(try u.get(&.{ i, i }));
             var r: usize = i + 1;
             while (r < n) : (r += 1) {
-                const val = @fabs(try u.get(&.{ r, i }));
+                const val = @abs(try u.get(&.{ r, i }));
                 if (val > max_val) {
                     max_val = val;
                     pivot_row = r;
@@ -2127,7 +2127,7 @@ pub const Tensor = struct {
                         a_jj += akj * akj;
                         a_ij += aki * akj;
                     }
-                    if (@fabs(a_ij) > tol) {
+                    if (@abs(a_ij) > tol) {
                         changed = true;
                         const tau = (a_jj - a_ii) / (2.0 * a_ij);
                         const t = if (tau >= 0.0) 1.0 / (tau + @sqrt(1.0 + tau * tau)) else -1.0 / (-tau + @sqrt(1.0 + tau * tau));
@@ -2201,7 +2201,7 @@ pub const Tensor = struct {
                 var j: usize = i + 1;
                 while (j < n) : (j += 1) {
                     const a_ij = try a.get(&.{ i, j });
-                    if (@fabs(a_ij) > tol) {
+                    if (@abs(a_ij) > tol) {
                         changed = true;
                         const a_ii = try a.get(&.{ i, i });
                         const a_jj = try a.get(&.{ j, j });
@@ -2368,7 +2368,7 @@ pub const Tensor = struct {
 
     pub fn arange(allocator: Allocator, start: f32, end: f32, step: f32) !Tensor {
         if (step == 0.0) return Error.InvalidShape;
-        const size = @as(usize, @intFromFloat(@ceil(@fabs((end - start) / step))));
+        const size = @as(usize, @intFromFloat(@ceil(@abs((end - start) / step))));
         if (size == 0) return Error.InvalidShape;
         var t = try init(allocator, &.{size});
         var i: usize = 0;

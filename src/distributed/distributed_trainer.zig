@@ -173,12 +173,12 @@ pub const Tensor = struct {
     }
 
     pub fn retain(self: *Tensor) void {
-        _ = @atomicRmw(usize, &self.data.refcount, .Add, 1, .Monotonic);
+        _ = @atomicRmw(usize, &self.data.refcount, .Add, 1, .monotonic);
     }
 
     pub fn release(self: *Tensor) void {
-        if (@atomicRmw(usize, &self.data.refcount, .Sub, 1, .Release) == 1) {
-            @fence(.Acquire);
+        if (@atomicRmw(usize, &self.data.refcount, .Sub, 1, .release) == 1) {
+            @fence(.acquire);
             const data_slice = self.data.ptr[0..self.data.len];
             const alloc = self.data.allocator;
             alloc.free(data_slice);
@@ -272,7 +272,7 @@ pub const Tensor = struct {
         self.offset = 0;
         self.cow = false;
 
-        var new_sh = try Shape.init(self.data.allocator, self.shape.dims);
+        const new_sh = try Shape.init(self.data.allocator, self.shape.dims);
         self.shape.deinit(self.data.allocator);
         self.shape = new_sh;
     }
@@ -323,7 +323,7 @@ pub const Tensor = struct {
         }
 
         var new_sh = try self.shape.copy(self.data.allocator);
-        var new_dims = try self.data.allocator.alloc(usize, new_shape.len);
+        const new_dims = try self.data.allocator.alloc(usize, new_shape.len);
         errdefer self.data.allocator.free(new_dims);
         @memcpy(new_dims, new_shape);
         self.data.allocator.free(new_sh.dims);
@@ -954,7 +954,7 @@ pub const Tensor = struct {
                     src_idx += indices[i] * self.shape.strides[i];
                 }
             }
-            self.data.ptr[self.offset + src_idx] = @fabs(self.data.ptr[self.offset + src_idx]);
+            self.data.ptr[self.offset + src_idx] = @abs(self.data.ptr[self.offset + src_idx]);
 
             var carry = true;
             var dim_idx: usize = self.shape.dims.len;
@@ -1890,8 +1890,8 @@ pub const Tensor = struct {
                     other_idx += indices[i] * other.shape.strides[i];
                 }
             }
-            const diff = @fabs(self.data.ptr[self.offset + src_idx] - other.data.ptr[other.offset + other_idx]);
-            if (diff > atol + rtol * @fabs(other.data.ptr[other.offset + other_idx])) return false;
+            const diff = @abs(self.data.ptr[self.offset + src_idx] - other.data.ptr[other.offset + other_idx]);
+            if (diff > atol + rtol * @abs(other.data.ptr[other.offset + other_idx])) return false;
 
             var carry = true;
             var dim_idx: usize = self.shape.dims.len;
@@ -1997,9 +1997,9 @@ pub const Tensor = struct {
                     sum_uv += u.data.ptr[ui] * self.data.ptr[self.offset + ui * self.shape.strides[0] + vi * self.shape.strides[1]] * v.data.ptr[vi];
                 }
             }
-            sigma = @fabs(sum_uv);
+            sigma = @abs(sum_uv);
 
-            if (@fabs(sigma - last_sigma) < tol) {
+            if (@abs(sigma - last_sigma) < tol) {
                 u.deinit();
                 v.deinit();
                 return sigma;
@@ -2114,11 +2114,11 @@ pub const Tensor = struct {
             var pivot = i;
             var j: usize = i + 1;
             while (j < n) : (j += 1) {
-                if (@fabs(mat.data.ptr[j * n + i]) > @fabs(mat.data.ptr[pivot * n + i])) {
+                if (@abs(mat.data.ptr[j * n + i]) > @abs(mat.data.ptr[pivot * n + i])) {
                     pivot = j;
                 }
             }
-            if (@fabs(mat.data.ptr[pivot * n + i]) < 1e-10) return Error.SingularMatrix;
+            if (@abs(mat.data.ptr[pivot * n + i]) < 1e-10) return Error.SingularMatrix;
             if (pivot != i) {
                 var k: usize = 0;
                 while (k < n) : (k += 1) {
@@ -2171,7 +2171,7 @@ pub const Tensor = struct {
             var converged = true;
             var ii: usize = 1;
             while (ii < n) : (ii += 1) {
-                if (@fabs(mat.data.ptr[ii * n + (ii - 1)]) > 1e-10) {
+                if (@abs(mat.data.ptr[ii * n + (ii - 1)]) > 1e-10) {
                     converged = false;
                     break;
                 }
@@ -2401,11 +2401,11 @@ pub const Tensor = struct {
             var pivot = i;
             var j: usize = i + 1;
             while (j < n) : (j += 1) {
-                if (@fabs(mat.data.ptr[j * n + i]) > @fabs(mat.data.ptr[pivot * n + i])) {
+                if (@abs(mat.data.ptr[j * n + i]) > @abs(mat.data.ptr[pivot * n + i])) {
                     pivot = j;
                 }
             }
-            if (@fabs(mat.data.ptr[pivot * n + i]) < 1e-10) return 0.0;
+            if (@abs(mat.data.ptr[pivot * n + i]) < 1e-10) return 0.0;
             if (pivot != i) {
                 var k: usize = 0;
                 while (k < n) : (k += 1) {
@@ -2477,7 +2477,7 @@ pub const Tensor = struct {
                     src_idx += indices[i] * self.shape.strides[i];
                 }
             }
-            total += math.pow(f32, @fabs(self.data.ptr[self.offset + src_idx]), order);
+            total += math.pow(f32, @abs(self.data.ptr[self.offset + src_idx]), order);
 
             var carry = true;
             var dim_idx: usize = self.shape.dims.len;
@@ -2631,7 +2631,7 @@ pub const Tensor = struct {
             }
             const val = self.data.ptr[self.offset + src_idx];
             const val_bits: u32 = @bitCast(val);
-            try writer.writeInt(u32, val_bits, .Little);
+            try writer.writeInt(u32, val_bits, .little);
 
             var carry = true;
             var dim_idx: usize = self.shape.dims.len;
@@ -2648,7 +2648,7 @@ pub const Tensor = struct {
     }
 
     pub fn load(allocator: Allocator, reader: anytype) !Tensor {
-        const ndim64 = try reader.readInt(u64, .Little);
+        const ndim64 = try reader.readInt(u64, .little);
         if (ndim64 > math.maxInt(usize)) return Error.Overflow;
         const ndim: usize = @intCast(ndim64);
         if (ndim == 0) return Error.EmptyInput;
@@ -2657,7 +2657,7 @@ pub const Tensor = struct {
         errdefer allocator.free(shape);
         var i: usize = 0;
         while (i < ndim) : (i += 1) {
-            const dim64 = try reader.readInt(u64, .Little);
+            const dim64 = try reader.readInt(u64, .little);
             if (dim64 > math.maxInt(usize)) return Error.Overflow;
             shape[i] = @intCast(dim64);
         }
@@ -2666,7 +2666,7 @@ pub const Tensor = struct {
         const total_size = try tensor.shape.totalSize();
         i = 0;
         while (i < total_size) : (i += 1) {
-            const val_bits = try reader.readInt(u32, .Little);
+            const val_bits = try reader.readInt(u32, .little);
             tensor.data.ptr[i] = @bitCast(val_bits);
         }
         return tensor;
@@ -2876,16 +2876,16 @@ pub const DistributedTrainer = struct {
         var buffered = std.io.bufferedReader(file.reader());
         var reader = buffered.reader();
 
-        const magic = try reader.readInt(u32, .Little);
+        const magic = try reader.readInt(u32, .little);
         if (magic != 0x4A414944) return error.InvalidCheckpoint;
 
-        const version = try reader.readInt(u32, .Little);
+        const version = try reader.readInt(u32, .little);
         if (version != 1) return error.UnsupportedVersion;
 
-        const step = try reader.readInt(u64, .Little);
+        const step = try reader.readInt(u64, .little);
         self.step_count = step;
 
-        const has_weights = try reader.readInt(u8, .Little);
+        const has_weights = try reader.readInt(u8, .little);
         if (has_weights != 0) {
             if (self.weights) |*w| {
                 w.deinit();
@@ -2900,15 +2900,15 @@ pub const DistributedTrainer = struct {
         var buffered = std.io.bufferedWriter(file.writer());
         var writer = buffered.writer();
 
-        try writer.writeInt(u32, 0x4A414944, .Little);
-        try writer.writeInt(u32, 1, .Little);
-        try writer.writeInt(u64, self.step_count, .Little);
+        try writer.writeInt(u32, 0x4A414944, .little);
+        try writer.writeInt(u32, 1, .little);
+        try writer.writeInt(u64, self.step_count, .little);
 
         if (self.weights) |*w| {
-            try writer.writeInt(u8, 1, .Little);
+            try writer.writeInt(u8, 1, .little);
             try w.save(writer);
         } else {
-            try writer.writeInt(u8, 0, .Little);
+            try writer.writeInt(u8, 0, .little);
         }
         try buffered.flush();
     }

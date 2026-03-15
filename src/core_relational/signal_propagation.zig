@@ -182,7 +182,7 @@ pub const SignalPropagationEngine = struct {
         if (!result.found_existing) {
             const key_copy = try self.allocator.dupe(u8, source_node_id);
             errdefer self.allocator.free(key_copy);
-            var trace = try ActivationTrace.init(self.allocator, source_node_id);
+            const trace = try ActivationTrace.init(self.allocator, source_node_id);
             result.value_ptr.* = trace;
             result.key_ptr.* = key_copy;
         }
@@ -273,7 +273,7 @@ pub const SignalPropagationEngine = struct {
             if (!result.found_existing) {
                 const key_copy = try self.allocator.dupe(u8, node_id);
                 errdefer self.allocator.free(key_copy);
-                var trace = try ActivationTrace.init(self.allocator, node_id);
+                const trace = try ActivationTrace.init(self.allocator, node_id);
                 result.value_ptr.* = trace;
                 result.key_ptr.* = key_copy;
             }
@@ -375,12 +375,12 @@ test "signal_propagation_basic" {
     var graph = try SelfSimilarRelationalGraph.init(allocator);
     defer graph.deinit();
 
-    var n1 = try Node.init(allocator, "n1", "data1", Qubit.initBasis0(), 0.0);
+    const n1 = try Node.init(allocator, "n1", "data1", Qubit.initBasis0(), 0.0);
     try graph.addNode(n1);
-    var n2 = try Node.init(allocator, "n2", "data2", Qubit.initBasis1(), 0.0);
+    const n2 = try Node.init(allocator, "n2", "data2", Qubit.initBasis1(), 0.0);
     try graph.addNode(n2);
 
-    var e1 = Edge.init(allocator, "n1", "n2", .coherent, 0.9, Complex(f64).init(0.5, 0.5), 1.2);
+    const e1 = Edge.init(allocator, "n1", "n2", .coherent, 0.9, Complex(f64).init(0.5, 0.5), 1.2);
     try graph.addEdge("n1", "n2", e1);
 
     var analyzer = DataFlowAnalyzer.init(allocator);

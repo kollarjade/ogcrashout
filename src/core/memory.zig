@@ -1234,7 +1234,7 @@ pub fn secureZeroMemory(ptr: [*]u8, size: usize) void {
     while (i < size) : (i += 1) {
         p[i] = 0;
     }
-    std.atomic.fence(.SeqCst);
+    std.atomic.fence(.seq_cst);
 }
 
 pub fn constantTimeCompare(a: []const u8, b: []const u8) bool {
@@ -1275,47 +1275,47 @@ pub fn pageAlignedSize(size: usize) usize {
 }
 
 pub fn memoryBarrier() void {
-    std.atomic.fence(.SeqCst);
+    std.atomic.fence(.seq_cst);
 }
 
 pub fn readMemoryFence() void {
-    std.atomic.fence(.Acquire);
+    std.atomic.fence(.acquire);
 }
 
 pub fn writeMemoryFence() void {
-    std.atomic.fence(.Release);
+    std.atomic.fence(.release);
 }
 
 pub fn compareExchangeMemory(ptr: *u64, expected: u64, desired: u64) bool {
-    return @cmpxchgStrong(u64, ptr, expected, desired, .SeqCst, .SeqCst) == null;
+    return @cmpxchgStrong(u64, ptr, expected, desired, .seq_cst, .seq_cst) == null;
 }
 
 pub fn atomicLoad(ptr: *u64) u64 {
-    return @atomicLoad(u64, ptr, .SeqCst);
+    return @atomicLoad(u64, ptr, .seq_cst);
 }
 
 pub fn atomicStore(ptr: *u64, value: u64) void {
-    @atomicStore(u64, ptr, value, .SeqCst);
+    @atomicStore(u64, ptr, value, .seq_cst);
 }
 
 pub fn atomicAdd(ptr: *u64, delta: u64) u64 {
-    return @atomicRmw(u64, ptr, .Add, delta, .SeqCst);
+    return @atomicRmw(u64, ptr, .Add, delta, .seq_cst);
 }
 
 pub fn atomicSub(ptr: *u64, delta: u64) u64 {
-    return @atomicRmw(u64, ptr, .Sub, delta, .SeqCst);
+    return @atomicRmw(u64, ptr, .Sub, delta, .seq_cst);
 }
 
 pub fn atomicAnd(ptr: *u64, mask: u64) u64 {
-    return @atomicRmw(u64, ptr, .And, mask, .SeqCst);
+    return @atomicRmw(u64, ptr, .And, mask, .seq_cst);
 }
 
 pub fn atomicOr(ptr: *u64, mask: u64) u64 {
-    return @atomicRmw(u64, ptr, .Or, mask, .SeqCst);
+    return @atomicRmw(u64, ptr, .Or, mask, .seq_cst);
 }
 
 pub fn atomicXor(ptr: *u64, mask: u64) u64 {
-    return @atomicRmw(u64, ptr, .Xor, mask, .SeqCst);
+    return @atomicRmw(u64, ptr, .Xor, mask, .seq_cst);
 }
 
 pub fn atomicInc(ptr: *u64) u64 {
@@ -1344,7 +1344,7 @@ pub fn secureErase(ptr: [*]u8, size: usize) void {
     while (i < size) : (i += 1) p[i] = 0xAA;
     i = 0;
     while (i < size) : (i += 1) p[i] = 0x00;
-    std.atomic.fence(.SeqCst);
+    std.atomic.fence(.seq_cst);
 }
 
 pub fn duplicateMemory(allocator: Allocator, data: []const u8) ![]u8 {
@@ -1618,8 +1618,8 @@ pub const ReadWriteLock = struct {
     pub fn readLock(self: *ReadWriteLock) void {
         while (true) {
             self.mutex.lock();
-            if (!@atomicLoad(bool, &self.writer, .Acquire)) {
-                _ = @atomicRmw(u64, &self.readers, .Add, 1, .AcqRel);
+            if (!@atomicLoad(bool, &self.writer, .acquire)) {
+                _ = @atomicRmw(u64, &self.readers, .Add, 1, .acq_rel);
                 self.mutex.unlock();
                 return;
             }
@@ -1629,14 +1629,14 @@ pub const ReadWriteLock = struct {
     }
 
     pub fn readUnlock(self: *ReadWriteLock) void {
-        _ = @atomicRmw(u64, &self.readers, .Sub, 1, .AcqRel);
+        _ = @atomicRmw(u64, &self.readers, .Sub, 1, .acq_rel);
     }
 
     pub fn writeLock(self: *ReadWriteLock) void {
         while (true) {
             self.mutex.lock();
-            if (!@atomicLoad(bool, &self.writer, .Acquire) and @atomicLoad(u64, &self.readers, .Acquire) == 0) {
-                @atomicStore(bool, &self.writer, true, .Release);
+            if (!@atomicLoad(bool, &self.writer, .acquire) and @atomicLoad(u64, &self.readers, .acquire) == 0) {
+                @atomicStore(bool, &self.writer, true, .release);
                 self.mutex.unlock();
                 return;
             }
@@ -1647,27 +1647,27 @@ pub const ReadWriteLock = struct {
 
     pub fn writeUnlock(self: *ReadWriteLock) void {
         self.mutex.lock();
-        @atomicStore(bool, &self.writer, false, .Release);
+        @atomicStore(bool, &self.writer, false, .release);
         self.mutex.unlock();
     }
 };
 
 pub fn atomicFlagTestAndSet(flag: *bool) bool {
-    return @atomicRmw(bool, flag, .Xchg, true, .SeqCst);
+    return @atomicRmw(bool, flag, .Xchg, true, .seq_cst);
 }
 
 pub fn atomicFlagClear(flag: *bool) void {
-    @atomicStore(bool, flag, false, .SeqCst);
+    @atomicStore(bool, flag, false, .seq_cst);
 }
 
 pub fn spinLockAcquire(lock: *u64) void {
-    while (@cmpxchgStrong(u64, lock, 0, 1, .Acquire, .Monotonic) != null) {
+    while (@cmpxchgStrong(u64, lock, 0, 1, .acquire, .monotonic) != null) {
         std.atomic.spinLoopHint();
     }
 }
 
 pub fn spinLockRelease(lock: *u64) void {
-    @atomicStore(u64, lock, 0, .Release);
+    @atomicStore(u64, lock, 0, .release);
 }
 
 pub fn memoryPatternFill(ptr: [*]u8, size: usize, pattern: []const u8) !void {
