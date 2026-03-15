@@ -329,7 +329,6 @@ pub const SSI = struct {
     }
 
     fn traverse(self: *const SSI, node: ?*Node, query_hash: u64, heap: anytype, k: usize, allocator: Allocator) !void {
-        _ = self;
         if (node == null) {
             return;
         }
@@ -447,7 +446,6 @@ pub const SSI = struct {
                     }
                     var chain = leaf.collision_chain;
                     while (chain) |c| {
-                        _ = c;
                         count += 1;
                         chain = c.next;
                     }
@@ -482,8 +480,7 @@ pub const SSI = struct {
         const token_len = try reader.readInt(usize, .Little);
         const tokens = try allocator.alloc(u32, token_len);
         errdefer allocator.free(tokens);
-        for (tokens, 0..) |*tok, i| {
-            _ = i;
+        for (tokens) |*tok| {
             tok.* = try reader.readInt(u32, .Little);
         }
         return .{
@@ -506,7 +503,6 @@ pub const SSI = struct {
             var chain_len: usize = 0;
             var chain = node.collision_chain;
             while (chain) |c| {
-                _ = c;
                 chain_len += 1;
                 chain = c.next;
             }

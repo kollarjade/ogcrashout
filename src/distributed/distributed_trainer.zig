@@ -1760,11 +1760,11 @@ pub const Tensor = struct {
         var temp = try allocator.alloc(f32, self.shape.dims[axis]);
         defer allocator.free(temp);
 
-        const flat_size = reduced_shape.len > 0 ? blk: {
+        const flat_size = if (reduced_shape.len > 0) blk: {
             var s: usize = 1;
             for (reduced_shape) |d| s *= d;
             break :blk s;
-        } else 1;
+        } else @as(usize, 1);
         var flat_idx: usize = 0;
 
         while (flat_idx < flat_size) : (flat_idx += 1) {

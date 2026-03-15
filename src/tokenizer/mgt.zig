@@ -34,15 +34,15 @@ pub const MGT = struct {
         errdefer token_to_id.deinit();
         var id_to_token = std.AutoHashMap(u32, []const u8).init(allocator);
         errdefer id_to_token.deinit();
-        const prefixes = std.StringHashMap(u32).init(allocator);
+        var prefixes = std.StringHashMap(u32).init(allocator);
         errdefer prefixes.deinit();
-        const suffixes = std.StringHashMap(u32).init(allocator);
+        var suffixes = std.StringHashMap(u32).init(allocator);
         errdefer suffixes.deinit();
-        const roots = std.StringHashMap(u32).init(allocator);
+        var roots = std.StringHashMap(u32).init(allocator);
         errdefer roots.deinit();
-        const bpe_pairs = std.StringHashMap(BPEMerge).init(allocator);
+        var bpe_pairs = std.StringHashMap(BPEMerge).init(allocator);
         errdefer bpe_pairs.deinit();
-        const anch_map = std.StringHashMap(u64).init(allocator);
+        var anch_map = std.StringHashMap(u64).init(allocator);
         errdefer anch_map.deinit();
         var allocated = std.ArrayList([]u8).init(allocator);
         errdefer {

@@ -1032,7 +1032,7 @@ fn validateF16Convertible(data: []const f32) !void {
     const max_f16 = std.math.floatMax(f16);
     for (data) |v| {
         if (!std.math.isFinite(v)) return error.NonFinite;
-        if (@abs(v) > max_f16) return error.NumericFailure;
+        if ((if (v >= 0) v else -v) > max_f16) return error.NumericFailure;
     }
 }
 

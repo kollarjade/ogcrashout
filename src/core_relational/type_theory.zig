@@ -985,7 +985,7 @@ pub const Term = struct {
                 switch (lit1) {
                     .bool_val => |b1| if (lit2.bool_val != b1) return false,
                     .nat_val => |n1| if (lit2.nat_val != n1) return false,
-                    .int_val => |i1| if (lit2.int_val != i1) return false,
+                    .int_val => |int_val_1| if (lit2.int_val != int_val_1) return false,
                     .real_val => |r1| if (lit2.real_val != r1) return false,
                     .string_val => |s1| if (!std.mem.eql(u8, s1, lit2.string_val)) return false,
                 }
@@ -1787,7 +1787,7 @@ pub const TypeChecker = struct {
         }
         const witness_type = try self.inferType(ctx, term.sub_terms.items[0]);
         errdefer witness_type.deinit();
-        const id_type = try Type.init(allocator, .IDENTITY);
+        const id_type = try Type.init(self.allocator, .IDENTITY);
         errdefer id_type.deinit();
         try id_type.parameters.append(try witness_type.clone(self.allocator));
         return id_type;

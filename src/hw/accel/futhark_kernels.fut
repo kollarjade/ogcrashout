@@ -1,3 +1,5 @@
+import "lib/github.com/diku-dk/sorts/radix_sort"
+
 let float_pow (base: f32) (exp_val: i64): f32 =
   loop result = 1f32 for _i < (i64.max 0 exp_val) do result * base
 
@@ -307,9 +309,9 @@ let rsf_relational_context [seq_len][d_model] (spectral_input: [seq_len][d_model
       let max_v = reduce f32.max (-f32.inf) combined
       let exp_vals = map (\xi -> f32.exp (xi - max_v)) combined
       let total = reduce (+) 0f32 exp_vals
-      in if total <= 0f32 || f32.isnan total
+      in (if total <= 0f32 || f32.isnan total
          then replicate seq_len (1f32 / f32.i64 seq_len)
-         else map (\e -> e / total) exp_vals
+         else map (\e -> e / total) exp_vals) :> [seq_len]f32
     ) spectral_scores temporal_scores
     let output = map (\weights ->
       tabulate d_model (\d ->
@@ -330,7 +332,7 @@ let rsf_relational_context [seq_len][d_model] (spectral_input: [seq_len][d_model
 let conv1d [input_len][kernel_size] (input: [input_len]f32) (kernel: [kernel_size]f32): []f32 =
   let out_len = i64.max 0 (input_len - kernel_size + 1)
   in tabulate out_len (\i ->
-    reduce (+) 0f32 (map2 (*) input[i:i+kernel_size] kernel)
+    reduce (+) 0f32 (map2 (*) (input[i:i+kernel_size] :> [kernel_size]f32) kernel)
   )
 
 let maxpool1d [input_len] (input: [input_len]f32) (pool_size: i64): []f32 =
@@ -339,7 +341,7 @@ let maxpool1d [input_len] (input: [input_len]f32) (pool_size: i64): []f32 =
     let out_len = input_len / pool_size
     in tabulate out_len (\i ->
       let pool_start = i * pool_size
-      in reduce f32.max (-f32.inf) input[pool_start:pool_start+pool_size]
+      in reduce f32.max (-f32.inf) (input[pool_start:pool_start+pool_size] :> [pool_size]f32)
     )
 
 let elem_add [n] (a: [n]f32) (b: [n]f32): [n]f32 = map2 (+) a b

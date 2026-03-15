@@ -42,7 +42,7 @@ pub fn build(b: *std.Build) void {
 
     const inference_server_exe = b.addExecutable(.{
         .name = "jaide-inference-server",
-        .root_source_file = .{ .path = "src/api/inference_server.zig" },
+        .root_source_file = .{ .path = "src/inference_server_main.zig" },
         .target = target,
         .optimize = optimize,
     });

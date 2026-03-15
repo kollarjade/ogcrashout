@@ -306,7 +306,7 @@ const TerminalColors = struct {
     red: []const u8,
 
     fn detect() TerminalColors {
-        if (std.posix.getenv("NO_COLOR") != null) {
+        if (std.os.getenv("NO_COLOR") != null) {
             return TerminalColors{ .enabled = false, .reset = "", .bold = "", .cyan = "", .green = "", .yellow = "", .red = "" };
         }
         const stdout = std.io.getStdOut();

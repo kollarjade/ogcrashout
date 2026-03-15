@@ -286,7 +286,7 @@ pub const Tensor = struct {
             }
         }
 
-        return @abs(sigma);
+        return if (sigma >= 0) sigma else -sigma;
     }
 
     pub fn matmul(self: *Tensor, A: *const Tensor, B: *const Tensor) !void {
@@ -1378,10 +1378,10 @@ pub const GaussianProcess = struct {
         var col: usize = 0;
         while (col < n) : (col += 1) {
             var pivot_row = col;
-            var pivot_value = @abs(a[col * n + col]);
+            var pivot_value = blk: { const v = a[col * n + col]; break :blk if (v >= 0) v else -v; };
             var row: usize = col + 1;
             while (row < n) : (row += 1) {
-                const candidate = @abs(a[row * n + col]);
+                const candidate = blk: { const v = a[row * n + col]; break :blk if (v >= 0) v else -v; };
                 if (candidate > pivot_value) {
                     pivot_value = candidate;
                     pivot_row = row;
@@ -2196,7 +2196,7 @@ pub const SophiaSOAPOptimizer = struct {
             const h = &self.hessian_diag.data[i];
             const g = grad.data[i];
             const direction = self.hutchinson_vector.data[i];
-            const curvature = (g * g + @abs(g * direction) * eps) / eps;
+            const gd = g * direction; const curvature = (g * g + (if (gd >= 0) gd else -gd) * eps) / eps;
             h.* = alpha * h.* + (1.0 - alpha) * curvature;
 
             if (self.config.use_gauss_newton) {
