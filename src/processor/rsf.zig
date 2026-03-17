@@ -1002,6 +1002,7 @@ fn layerGPUCompatible(layer: *const LayerCore) bool {
 }
 
 fn modelGPUCompatible(core: *const RSFCore) bool {
+    if (comptime !accel.gpu_enabled) return false;
     if (core.num_layers != 1 or core.layers.len != 1) return false;
     return layerGPUCompatible(&core.layers[0]);
 }
@@ -1020,6 +1021,7 @@ fn disableGPU(core: *RSFCore) void {
 }
 
 fn ensureGPUInitialized(core: *RSFCore) !void {
+    if (comptime !accel.gpu_enabled) return error.GPUUnsupportedConfiguration;
     if (!modelGPUCompatible(core)) return error.GPUUnsupportedConfiguration;
     if (core.gpu_accel == null) core.gpu_accel = accel.RSFAccelerator.init(core.dim) catch return error.NoGPUAvailable;
     if (core.f16_buf == null) {
@@ -1200,21 +1202,23 @@ pub const RSF = struct {
         if (x.shape.dims[1] != dim2) return error.ShapeMismatch;
         if (x.shape.dims[0] == 0) return error.InvalidBatchSize;
 
-        if (core.gpu_available.load(.monotonic) != 0 and core.gpu_weight_version == core.cpu_weight_version and core.gpu_accel != null and modelGPUCompatible(core)) {
-            if (core.gpu_accel) |*ga| {
-                if (ga.forwardFromTensor(x, core.allocator)) |result| {
-                    var gpu_result = result;
-                    defer gpu_result.deinit();
+        if (comptime accel.gpu_enabled) {
+            if (core.gpu_available.load(.monotonic) != 0 and core.gpu_weight_version == core.cpu_weight_version and core.gpu_accel != null and modelGPUCompatible(core)) {
+                if (core.gpu_accel) |*ga| {
+                    if (ga.forwardFromTensor(x, core.allocator)) |result| {
+                        var gpu_result = result;
+                        defer gpu_result.deinit();
 
-                    if (gpu_result.shape.dims.len != 2 or gpu_result.shape.dims[0] != x.shape.dims[0] or gpu_result.shape.dims[1] != x.shape.dims[1] or gpu_result.data.len != x.data.len) {
-                        invalidateGPUForMismatch(core);
-                        try forwardOnCore(core, x);
+                        if (gpu_result.shape.dims.len != 2 or gpu_result.shape.dims[0] != x.shape.dims[0] or gpu_result.shape.dims[1] != x.shape.dims[1] or gpu_result.data.len != x.data.len) {
+                            invalidateGPUForMismatch(core);
+                            try forwardOnCore(core, x);
+                            return;
+                        }
+                        @memcpy(x.data, gpu_result.data);
                         return;
-                    }
-                    @memcpy(x.data, gpu_result.data);
-                    return;
-                } else |_| invalidateGPUForMismatch(core);
-            } else invalidateGPUForMismatch(core);
+                    } else |_| invalidateGPUForMismatch(core);
+                } else invalidateGPUForMismatch(core);
+            }
         }
         try forwardOnCore(core, x);
     }

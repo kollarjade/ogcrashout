@@ -4,6 +4,8 @@ const futhark = @import("futhark_bindings.zig");
 const core_tensor = @import("../../core/tensor.zig");
 const core_memory = @import("../../core/memory.zig");
 
+pub const gpu_enabled: bool = @import("build_options").gpu_acceleration;
+
 pub const AccelError = error{
     FutharkConfigFailed,
     FutharkContextFailed,
